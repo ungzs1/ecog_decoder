@@ -1,0 +1,4 @@
+data/raw_data/*
+!data/raw_data/__init__.py
+*.pyc
+logs/*
