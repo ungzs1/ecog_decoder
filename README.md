@@ -7,7 +7,10 @@ Use the following command in the *Anaconda Prompt* to setup the environment for 
 
 To activate the environment use the command:
 > conda activate ecog 
+<br>
 
+## For every note in the Project tab, please make a separate branch, and issue a pull request to the master branch when the task is finished.
+<br>
 
 ## Repository structure 
 
