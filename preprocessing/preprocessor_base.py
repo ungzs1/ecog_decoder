@@ -1,7 +1,6 @@
 import os
 import sys
 
-import cv2
 import glob
 import numpy as np
 import xmltodict
