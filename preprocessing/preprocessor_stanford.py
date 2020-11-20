@@ -10,11 +10,11 @@ class StanfordPreprocessor(Preprocessor):
 		self.config.["data_source"] = "stanford"
 
 	def load_data_and_labels(self, filename):
-        # should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
-        x = []
-        y = []
+		# should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
+		x = []
+		y = []
 
-        return x, y
+		return x, y
 
 
     def train_files_from_dir(self):
