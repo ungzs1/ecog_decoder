@@ -7,8 +7,15 @@ Use the following command in the *Anaconda Prompt* to setup the environment for 
 
 To activate the environment use the command:
 > conda activate ecog 
-<br>
 
+
+To update the environment file, you can export it with the command: 
+
+> conda env export > environment.yml
+
+#### Please make sure to remove the <i>Prefix</i>, the last row from the generated file, before you commit 
+
+##                                                                  
 ## For every note in the Project tab, please make a separate branch, and issue a pull request to the master branch when the task is finished.
 <br>
 
