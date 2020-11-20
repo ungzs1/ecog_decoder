@@ -5,13 +5,11 @@ except ImportError:
 
 class StanfordPreprocessor(Preprocessor):
 
-
 	def __init__(self, *args, **kwargs):
 		super(StanfordPreprocessor, self).__init__(*args, **kwargs)
-
 		self.config.["data_source"] = "stanford"
 
-    def load_data_and_labels(self, filename):
+	def load_data_and_labels(self, filename):
         # should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
         x = []
         y = []
