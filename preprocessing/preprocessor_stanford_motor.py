@@ -26,8 +26,6 @@ class StanfordPreprocessor(Preprocessor):
         data = raw_data['data']
         stim = np.squeeze(raw_data['stim'].astype('int32'))
 
-        
-
         # ignore unknown activity before and after trials
         trials_start = np.where(stim!=0)[0][0]
         trials_end = np.where(stim!=0)[0][-1] + StanfordPreprocessor.blocksize
