@@ -183,7 +183,7 @@ class Preprocessor(object):
         '''
         with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
             hf.create_dataset("train_x",  data=train_x)
-            #hf.create_dataset("train_y",  data=train_y)
+            hf.create_dataset("train_y",  data=train_y)
             #hf.create_dataset("test_x",  data=test_x)
             #hf.create_dataset("test_y",  data=test_y)
 
@@ -234,8 +234,6 @@ class Preprocessor(object):
 
         # Calculate spectra from 0 to 200 Hz
         px = get_spectra(x, tr_tm, self.fs, self.PSD_time_range, self.PSD_freq_range)
-
-        print(x.shape, y.shape, px.shape, py.shape)
 
         ## 
 
