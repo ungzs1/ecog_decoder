@@ -4,6 +4,7 @@ import sys
 import glob
 import numpy as np
 import xmltodict
+import h5py
 
 from scipy.signal import butter, lfilter, iirnotch, filtfilt, welch
 from sklearn.model_selection import train_test_split
@@ -110,7 +111,7 @@ class Preprocessor(object):
 
     fs = -1 # sampling rate
     line_freq = -1 # line freq = 60 Hz
-    blocksize = np.floor(fs*0.25) # minimum block size of trials, shorter trials ignored. Default: blocksize=floor(fs*0.25) window length of PSD ##################ALTALANOSITANI KELL, WINDOW SIZE LEGYEN ALLITHATO
+    blocksize = np.floor(fs*0.25) # minimum block size of trials, shorter trials ignored. Default: blocksize=floor(fs*0.25) window length of PSD
     PSD_time_range = (0,-1) # set time range of trials to use in a tuple of (first data, last data), eg (1000,-500) ignores first 1000 and last 500 datapoints. Default: PSD_time_range=(0,-1) to use whole range
     PSD_freq_range = (0,200) # range of Power Spectrum, min and max freq in a tuple eg.(0,200) gives power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200)
 
@@ -163,28 +164,28 @@ class Preprocessor(object):
             px,py = self.preprocess_with_label(x,y)
             test_x.append(px)
             test_y.append(py)
-
+        
         train_x = np.asarray(train_x)
         train_y = np.asarray(train_y)
         test_x = np.asarray(test_x)
         test_y = np.asarray(test_y)
-
+        
         # Sanity check
-
+        
         if train_x.shape[0] != train_y.shape[0]:
             raise ValueError("Train dataset first dimension mismatch: "+str(train_x.shape[0])+" and "+str(train_y.shape[0]))
 
         if test_x.shape[0] != test_y.shape[0]:
             raise ValueError("Test dataset first dimension mismatch: "+str(test_x.shape[0])+" and "+str(test_y.shape[0]))
-
+        '''
         if self.config["create_validation_bool"]:
             train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)
-
-        with h5py.File(os.path.join(self.save_dir, self.save_name_base), 'w') as hf:
+        '''
+        with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
             hf.create_dataset("train_x",  data=train_x)
-            hf.create_dataset("train_y",  data=train_y)
-            hf.create_dataset("test_x",  data=test_x)
-            hf.create_dataset("test_y",  data=test_y)
+            #hf.create_dataset("train_y",  data=train_y)
+            #hf.create_dataset("test_x",  data=test_x)
+            #hf.create_dataset("test_y",  data=test_y)
 
             if self.config["create_validation_bool"]:
                 hf.create_dataset("val_x",  data=val_x)
@@ -193,6 +194,8 @@ class Preprocessor(object):
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
             root = {"root":self.config}
             fd.write(xmltodict.unparse(root, pretty = True))
+
+        print("Preprocessing done")
 
     def preprocess_with_label(self, x, y):
 
@@ -231,6 +234,8 @@ class Preprocessor(object):
 
         # Calculate spectra from 0 to 200 Hz
         px = get_spectra(x, tr_tm, self.fs, self.PSD_time_range, self.PSD_freq_range)
+
+        print(x.shape, y.shape, px.shape, py.shape)
 
         ## 
 
