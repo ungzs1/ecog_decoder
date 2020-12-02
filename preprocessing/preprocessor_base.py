@@ -2,7 +2,6 @@ import os
 import sys
 
 import glob
-from matplotlib.pyplot import psd
 import numpy as np
 import xmltodict
 
