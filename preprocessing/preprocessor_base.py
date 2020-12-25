@@ -26,7 +26,6 @@ def notch_filtering(data, fs, line_freq, PSD_range):
     #removes line frequency noise and multiples from the signal
 
     multiples_linefreq = range(line_freq,PSD_range[1],line_freq) # line frequency and multiples eg. [60,120,180]
-    # Q = 30 # Quality factor
 
     for f0 in multiples_linefreq:
         w0 = f0 / (fs / 2 ) # Normalized Frequency
