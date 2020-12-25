@@ -26,7 +26,6 @@ def notch_filtering(data, fs, line_freq, PSD_range):
     #removes line frequency noise and multiples from the signal
 
     multiples_linefreq = range(line_freq,PSD_range[1],line_freq) # line frequency and multiples eg. [60,120,180]
-    Q = 30 # Quality factor
 
     for f0 in multiples_linefreq:
         w0 = f0 / (fs / 2 ) # Normalized Frequency
@@ -226,11 +225,11 @@ class Preprocessor(object):
         tr_tm = np.transpose(np.asarray(tr_tm))
         py = tr_tm[1]
 
-        # notch filtering to remove line frequency noise and multiples in PSD_range
-        notch_filtering(x, self.fs, self.line_freq, self.PSD_freq_range)
+        # Notch filtering to remove line frequency noise and multiples in PSD_range
+        x = notch_filtering(x, self.fs, self.line_freq, self.PSD_freq_range)
 
         # Common Average Reference (car) filter to remove noise common to all channels
-        car(x)
+        x = car(x)
 
         # Calculate spectra from 0 to 200 Hz
         px = get_spectra(x, tr_tm, self.fs, self.PSD_time_range, self.PSD_freq_range)
