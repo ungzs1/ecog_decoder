@@ -129,7 +129,7 @@ class Preprocessor(object):
             self.config = config
 
         self.config.setdefault("save_dir", "")
-        self.config.setdefault("save_name","") # 
+        self.config.setdefault("save_name","") 
         self.config.setdefault("default_config_name", "config.xml")
         self.config.setdefault("create_validation_bool", True)
         self.config.setdefault("data_source", "")
@@ -153,8 +153,9 @@ class Preprocessor(object):
         test_y = []
 
         for ftrain in self.train_files_from_dir():
+            print(ftrain) # to see progress
             x,y = self.load_data_and_labels(ftrain)
-            px,py = self.preprocess_with_label(x,y)
+            px,py = self.preprocess_with_label(x,y) 
             train_x.append(px)
             train_y.append(py)
 
@@ -163,28 +164,30 @@ class Preprocessor(object):
             px,py = self.preprocess_with_label(x,y)
             test_x.append(px)
             test_y.append(py)
-        
-        train_x = np.asarray(train_x)
-        train_y = np.asarray(train_y)
-        test_x = np.asarray(test_x)
-        test_y = np.asarray(test_y)
-        
+
         # Sanity check
         
-        if train_x.shape[0] != train_y.shape[0]:
-            raise ValueError("Train dataset first dimension mismatch: "+str(train_x.shape[0])+" and "+str(train_y.shape[0]))
+        if len(train_x) != len(train_y):
+            raise ValueError("Train dataset first dimension mismatch: ", len(train_x), " and ", len(train_y))
 
-        if test_x.shape[0] != test_y.shape[0]:
-            raise ValueError("Test dataset first dimension mismatch: "+str(test_x.shape[0])+" and "+str(test_y.shape[0]))
-        '''
+        if len(test_x) != len(test_y):
+            raise ValueError("Test dataset first dimension mismatch: ", len(train_x), " and ", len(train_y))
+        
         if self.config["create_validation_bool"]:
             train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)
-        '''
+        
+        # Create datasets
+
         with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
-            hf.create_dataset("train_x",  data=train_x)
-            hf.create_dataset("train_y",  data=train_y)
-            #hf.create_dataset("test_x",  data=test_x)
-            #hf.create_dataset("test_y",  data=test_y)
+            grp_train_x = hf.create_group("train_x")
+            grp_train_y = hf.create_group("train_y")
+            #grp_test_x = hf.create_group("test_x")
+            #grp_test_y = hf.create_group("test_y")
+
+            for i, px in enumerate(train_x): grp_train_x[self.subject_ids[i]] = px
+            for i, py in enumerate(train_y): grp_train_y[self.subject_ids[i]] = py
+            #for i, px in enumerate(train_x): grp_test_x[self.subject_ids[i]] = px
+            #for i, py in enumerate(train_y): grp_test_y[self.subject_ids[i]] = py
 
             if self.config["create_validation_bool"]:
                 hf.create_dataset("val_x",  data=val_x)
