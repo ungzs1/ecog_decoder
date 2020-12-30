@@ -114,7 +114,7 @@ class Preprocessor(object):
     PSD_time_range = (0,-1) # set time range of trials to use in a tuple of (first data, last data), eg (1000,-500) ignores first 1000 and last 500 datapoints. Default: PSD_time_range=(0,-1) to use whole range
     PSD_freq_range = (0,200) # range of Power Spectrum, min and max freq in a tuple eg.(0,200) gives power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200)
 
-    def __init__(self, _data_dir, config_file ="", config={}):
+    def __init__(self, config_file ="", config={}):
 
         if config_file != "" and path.exists(config_file):
             with open(config_file) as fd:
