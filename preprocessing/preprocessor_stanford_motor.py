@@ -17,9 +17,11 @@ class StanfordPreprocessor(Preprocessor):
         super(StanfordPreprocessor, self).__init__(*args, **kwargs)
         self.config["data_source"] = "stanford motor basic dataset"
         self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../data/raw_data/stanford_motorbasic/")
-        self.config["save_name"] = "stanford_motorbasic_preprocesed"
-        #self.config["default_config_name"]
+        self.config["save_name"] = "stanf_mot_preprocesed.hdf5"
+        self.config["default_config_name"] = 'STANFORD_MOTORBASIC_CONFIG'
         self.config["create_validation_bool"] = False
+
+        self.subject_ids = ['bp','ca','cc','de','fp','gc','hh','hl','jc','jm','jt','rh','rr','ug','wc','zt']
 
     def load_data_and_labels(self, filename):
         # should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
@@ -55,10 +57,9 @@ class StanfordPreprocessor(Preprocessor):
         path = os.path.join(my_path, "../data/raw_data/stanford_motorbasic/")
 
         # create list of file path
-        ### xfile_list = [path+filename for filename in os.listdir(path)] ######### EZ A VEGLEGES, DE EGYELORE A KOVETKEZO HASZNALHATO CSAK!!!!
+        ### xfile_list = [path+filename for filename in os.listdir(path)] ######### EZ A VEGLEGES, DE EGYELORE A KOVETKEZO HASZNALHATO CSAK, MERT A TOBB FAJL FORMATUMARA KULON BEOLVASAST KELL MEG IRNI!!!!
         
-        subjects=['bp'] #,'ca','ca','cc','de','fp','gc','hh','hl','jc','jm','jt','rh','rr','ug','wc','zt']
-        for subject in subjects:
+        for subject in self.subject_ids:
             filename = path + subject + '_mot_t_h.mat'
             file_list.append(filename)
 
