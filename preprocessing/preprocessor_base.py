@@ -23,20 +23,19 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5, axis=0, btype="ba
     return y
 
 def notch_filtering(data, fs, line_freq, PSD_range):
-    #removes line frequency noise and multiples from the signal
+    # removes line frequency noise and multiples from the signal
 
     multiples_linefreq = range(line_freq,PSD_range[1],line_freq) # line frequency and multiples eg. [60,120,180]
 
-    for f0 in multiples_linefreq:
+    for f0 in multiples_linefreq:    
         w0 = f0 / (fs / 2 ) # Normalized Frequency
-        # filtering
-        b, a = iirnotch(w0, fs)  
-        data = filtfilt(b, a, data, axis=0)
+        b, a = iirnotch(w0, fs)  # Numerator ('b') and denominator ('a') polynomials of the IIR filter
+        data = filtfilt(b, a, data, axis=2)
         
     return data
 
 def car(data):
-    #%this function calculates and returns the common avg reference of 2-d matrix "data" of shape [timestep, channel].
+    # this function calculates and returns the common avg reference of 2-d matrix "data" of shape [timestep, channel].
     data = np.double(data)        
     num_chans = data.shape[1]
     
@@ -47,48 +46,28 @@ def car(data):
     spatfiltmatrix = spatfiltmatrix/num_chans
 
     # perform spatial filtering
-    data = np.dot(data, spatfiltmatrix)
+    for i in range(data.shape[0]): data[i] = np.dot(spatfiltmatrix, data[i])
 
     return data
 
-def get_spectra(x, tr_tm, fs, time_range, freq_range):
+def get_spectra(x, fs, time_range, freq_range):
     # returns PSD as "all_PSD" in form of [frequencies, channels, trials]. power spectrum densitiy for each channel for each trial
-    num_chans = x.shape[1]
-    num_trials = tr_tm.shape[1]
+    noverlap = np.floor(fs*0.1); nperseg = np.floor(fs*0.25) # set window size and offset for PSD
+    all_PSD = []
 
-    is_firstloop = True
-
-    #calculate PSD
-    for cur_trial in range(num_trials): # loop through all trials
-        # get actual trial
-        if cur_trial == num_trials-1:
-            curr_data = np.squeeze(x[tr_tm[0,cur_trial]:,:])
-        else:
-            curr_data = np.squeeze(x[tr_tm[0,cur_trial]:tr_tm[0,cur_trial+1],:])
-        
-        # ignore data outside the range of time_freq (transition between movement types)
-        curr_data = curr_data[time_range[0]:time_range[1],:] 
-        
-        # set window size and offset for PSD
-        noverlap = np.floor(fs*0.1); nperseg = np.floor(fs*0.25) 
-        
+    for curr_data in x: # loop through all trials
+        block_PSD = []
         # get Power Spectrum Density with signal.welch
-        for p in range(num_chans):
-            [f, temp_PSD] = welch(curr_data[:,p], nfft=fs, fs=fs, noverlap=noverlap, nperseg=nperseg)
-            temp_PSD = temp_PSD.reshape((-1,1))
-            if p == 0:
-                block_PSD = temp_PSD
-            else:
-                block_PSD = np.hstack((block_PSD, temp_PSD))
-        block_PSD = block_PSD[freq_range[0]:freq_range[1],:] # downsample - we only want to get spectra of PSD_range
-        
-        if is_firstloop:
-            all_PSD = block_PSD
-            is_firstloop = False
-        else:
-            all_PSD = np.dstack((all_PSD, block_PSD))
+        for ch in range(x.shape[1]): # loop through all channels
+            [f, temp_PSD] = welch(curr_data[ch,:], nfft=fs, fs=fs, noverlap=noverlap, nperseg=nperseg)
+            block_PSD.append(temp_PSD)
 
-    return(all_PSD)
+        block_PSD = np.asarray(block_PSD)
+        all_PSD.append(block_PSD[:,0:200]) # downsample - we only want to get spectra of PSD_range
+
+    all_PSD = np.asarray(all_PSD)
+
+    return all_PSD
 
 def config_post(path, key, value):
         
@@ -219,15 +198,6 @@ class Preprocessor(object):
 
         ## ACTUAL PREPROCESSING ##
 
-        # catalogue trials in "tr_tm": [trial onset, trial type]
-        tr_tm = [[0, y[0]]] # initialize with [time=0, trial=y[0]]
-        for n in range(1,len(y)):
-            if y[n] != y[n-1] and n-tr_tm[-1][0] >= self.blocksize: # save onset and type of trial only if trial>=blocksize
-                tr_tm.append([n, y[n]])
-
-        tr_tm = np.transpose(np.asarray(tr_tm))
-        py = tr_tm[1]
-
         # Notch filtering to remove line frequency noise and multiples in PSD_range
         x = notch_filtering(x, self.fs, self.line_freq, self.PSD_freq_range)
 
@@ -235,7 +205,9 @@ class Preprocessor(object):
         x = car(x)
 
         # Calculate spectra from 0 to 200 Hz
-        px = get_spectra(x, tr_tm, self.fs, self.PSD_time_range, self.PSD_freq_range)
+        px = get_spectra(x, self.fs, self.PSD_time_range, self.PSD_freq_range)
+
+        py = y # nothing to change
 
         ## 
 
