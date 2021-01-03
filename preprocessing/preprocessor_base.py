@@ -134,7 +134,7 @@ class Preprocessor(object):
         for ftrain in self.train_files_from_dir():
             print(ftrain) # to see progress
             x,y = self.load_data_and_labels(ftrain)
-            px,py = self.preprocess_with_label(x,y) 
+            px,py = self.preprocess_with_label(x,y)
             train_x.append(px)
             train_y.append(py)
 
