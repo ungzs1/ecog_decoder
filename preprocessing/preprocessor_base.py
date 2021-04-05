@@ -131,6 +131,22 @@ class Preprocessor(object):
         test_x = []
         test_y = []
 
+        X_train_all, y_train_all, X_test_all, y_test_all = self.get_train_test_data()
+
+        for i in range(len(X_train_all)):
+            x = X_train_all[i]
+            y = y_train_all[i]
+            px,py = self.preprocess_with_label(x,y)
+            train_x.append(px)
+            train_y.append(py)
+
+        for i in range(len(X_test_all)):
+            x = X_test_all[i]
+            y = y_test_all[i]       
+            px,py = self.preprocess_with_label(x,y)
+            test_x.append(px)
+            test_y.append(py)
+        '''
         for ftrain in self.train_files_from_dir():
             print(ftrain) # to see progress
             x,y = self.load_data_and_labels(ftrain)
@@ -143,7 +159,7 @@ class Preprocessor(object):
             px,py = self.preprocess_with_label(x,y)
             test_x.append(px)
             test_y.append(py)
-
+        '''
         # Sanity check
         
         if len(train_x) != len(train_y):
@@ -160,13 +176,13 @@ class Preprocessor(object):
         with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
             grp_train_x = hf.create_group("train_x")
             grp_train_y = hf.create_group("train_y")
-            #grp_test_x = hf.create_group("test_x")
-            #grp_test_y = hf.create_group("test_y")
+            grp_test_x = hf.create_group("test_x")
+            grp_test_y = hf.create_group("test_y")
 
             for i, px in enumerate(train_x): grp_train_x[self.subject_ids[i]] = px
             for i, py in enumerate(train_y): grp_train_y[self.subject_ids[i]] = py
-            #for i, px in enumerate(train_x): grp_test_x[self.subject_ids[i]] = px
-            #for i, py in enumerate(train_y): grp_test_y[self.subject_ids[i]] = py
+            for i, px in enumerate(test_x): grp_test_x[self.subject_ids[i]] = px
+            for i, py in enumerate(test_y): grp_test_y[self.subject_ids[i]] = py
 
             if self.config["create_validation_bool"]:
                 hf.create_dataset("val_x",  data=val_x)
