@@ -3,3 +3,4 @@ data/*
 *.pyc
 logs/*.*
 !logs/__init__.py
+trained_models/*
