@@ -193,6 +193,9 @@ class Preprocessor(object):
                 hf.create_dataset("val_x",  data=val_x)
                 hf.create_dataset("val_y",  data=val_y)
 
+        if not os.path.exists(self.config["save_dir"]):
+            os.makedirs(self.config["save_dir"])
+
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
             root = {"root":self.config}
             fd.write(xmltodict.unparse(root, pretty = True))
