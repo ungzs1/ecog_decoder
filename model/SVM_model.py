@@ -283,10 +283,11 @@ class svmClassifier(object):
     def r_greedy(self):
         # from [freq, ch, trial] to [(frek x ch), trial]
         px_return = np.transpose(self.px.reshape(-1,self.py.shape[0]))
+        px_return_test = np.transpose(self.px_test.reshape(-1,self.py_test.shape[0]))
 
         #these two variables store selected feature set and accuracy in each iteration
         worst_features_in_trial = {'feature_id':[],'result':[],'px':[]} 
-        #worst_features_in_trial_test={'result':[], 'px':[]}
+        worst_features_in_trial_test={'result':[], 'px':[]}
 
         max_found = False
         curr_features = px_return.shape[1]   # to count maximum features to be excluded
@@ -298,7 +299,6 @@ class svmClassifier(object):
             for i in range(px_return.shape[1]):
                 # fit px (featurevector) to required model input shape
                 px_temp = np.delete(px_return, i, axis=1)
-                #px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
                 
                 # build and evaluate model, returns accuracy result
                 res_temp = self.scoreModel(px_temp, self.py)
@@ -307,13 +307,14 @@ class svmClassifier(object):
                 if res_temp > res:
                     res = res_temp
                     worst_feature = {'feature_id':i,'result':res, 'px':px_temp}
-                    #worst_feature_test = px_temp_test
-                    # concatenate current (n-th) features with best n-1 to get feature vector
             
             if (len(worst_features_in_trial["result"]) > 1) and (not res > worst_features_in_trial['result'][-1]):
                 max_found = True
             else: 
+                # get best featureset in current iteration
                 px_return = worst_feature['px']
+                px_return_test =  np.delete(px_return_test, worst_feature['feature_id'], axis=1)
+
                 # build model on final feature set
                 model = self.clf.fit(px_return, self.py)
 
@@ -322,9 +323,9 @@ class svmClassifier(object):
                 worst_features_in_trial['result'].append(worst_feature['result'])
                 worst_features_in_trial['px'].append(worst_feature['px'])
                 
-                #res_test = model.score(best_feature_test, self.py_test) #to store test set accuracy
-                #best_features_in_trial_test['result'].append(res_test)
-                #best_features_in_trial_test['px'].append(best_feature_test)
+                res_test = model.score(px_return_test, self.py_test) #to store test set accuracy
+                worst_features_in_trial_test['result'].append(res_test)
+                worst_features_in_trial_test['px'].append(px_return)
                 
                 # increase current feature count
                 curr_features -=1
@@ -334,15 +335,14 @@ class svmClassifier(object):
                     max_found = True
                 
                 #print progress
-                print('\tfeatures remaining: ', curr_features, ', accuracy: ', round(worst_feature['result'],2))#, 'test accuracy: ', round(res_test ,2))
-        '''
+                print('\tfeatures remaining: ', curr_features, ', accuracy: ', round(worst_feature['result'],2), 'test accuracy: ', round(res_test ,2))
+        
         ## add result to global class variable
-        res = best_features_in_trial['result'][-1]
+        res = worst_features_in_trial['result'][-1]
         if self.id not in svmClassifier.results:
             svmClassifier.results[self.id] = {}
-        svmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0], best_features_in_trial_test['result'][0]]
-        svmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'], best_features_in_trial_test['result']]     
-
+        svmClassifier.results[self.id]['greedy Reverso'] = [worst_features_in_trial['result'], worst_features_in_trial_test['result']]     
+        '''
         ## save the model and selected parameters to disk
         if self.save_model:
             # save model
@@ -361,8 +361,8 @@ class svmClassifier(object):
             filename = self.id+'_greedy_params.pkl'
             my_path = self.save_dir + filename
             with open(my_path, 'wb') as f:
-                pickle.dump(params, f)   '''
-
+                pickle.dump(params, f)
+            '''
     @classmethod
     def set_class_vars(cls, modelSettings):
         cls.scaler=modelSettings['scaler']
