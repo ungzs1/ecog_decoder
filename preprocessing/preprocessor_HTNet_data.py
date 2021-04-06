@@ -40,7 +40,6 @@ class HTNet_preprocessor(Preprocessor):
 
         # loop through each subject
         for subject in self.subject_ids:
-            print('\nsubject')
             filename = ecog_lp + subject + '_ecog_data.nc'
 
             #get data

@@ -136,6 +136,7 @@ class Preprocessor(object):
 
         print('\npreprocessing train data...')
         for i in range(len(X_train_all)):
+            print('\n\tsubject ', i, '/', len(X_train_all))
             x = X_train_all[i]
             y = y_train_all[i]
             px,py = self.preprocess_with_label(x,y)
@@ -144,6 +145,7 @@ class Preprocessor(object):
 
         print('\npreprocessing test data...')
         for i in range(len(X_test_all)):
+            print('\n\tsubject ', i, '/', len(X_train_all))
             x = X_test_all[i]
             y = y_test_all[i]       
             px,py = self.preprocess_with_label(x,y)
