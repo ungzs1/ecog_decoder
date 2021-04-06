@@ -11,12 +11,12 @@ root = os.path.abspath(os.path.dirname(__file__))
 
 # load data
 path_to_data = os.path.join(root, "../data/preprocessed_data/HTNet_data_preprocesed.hdf5")
-all_data = h5py.File(, 'r')
+all_data = h5py.File(path_to_data, 'r')
 
 # save dir
 #root = Path(".")
 database_folder = '../trained_models/htnet_data/'
-subfolder = 'del4/'
+subfolder = 'rGreedy/'
 my_folder = os.path.join(root, database_folder, subfolder)
 
 #clf = svm.NuSVC(decision_function_shape='ovo', class_weight='balanced', verbose=True)
@@ -28,6 +28,7 @@ modelSettings={
     'cv':5,
     'test_size':0.3,
     'greedy_max_features':-1,
+    'reverse_greedy_min_features':-1,
     'save_model':True,
     'save_dir':my_folder,
 }
@@ -36,7 +37,7 @@ featureSettings={
         'descriptions':['move v rest'],
         'label_pairs':[(1,2)]
     },
-    'ranges':None,#[range(7,13), range(10,14), range(14,26), range(26,36), range(36,70), range(76,125)],#, range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
+    'ranges':[range(7,13), range(10,14), range(14,26), range(26,36), range(36,70), range(76,125)],#, range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
     'do_correlation_analysis':False,
     'correlation_pairs':None,
     'multiple_rest':False,
@@ -120,17 +121,20 @@ for i, name in enumerate(list(train_x.keys())):
         
         # SINGLE FEATURE startegy
         #my_model.single_feature() # this list stores accuracy of each feature for the given classification task
-        
+        '''
         # BASELINE startegy
         print('**baseline')
-        my_model.baseline()
+        my_model.baseline()'''
         '''
         # N-BEST startegy
         my_model.N_best(evaluation)
         # GREEDY startegy
         print('**greedy')
-        my_model.greedy_search()
+        my_model.greedy()
         '''
+        # reverse GREEDY startegy
+        print('**greedy REVERSO')
+        my_model.r_greedy()
 
 # save results
 with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
