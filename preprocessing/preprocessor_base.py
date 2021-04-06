@@ -134,9 +134,9 @@ class Preprocessor(object):
         print('reading data and reshaping it...')
         X_train_all, y_train_all, X_test_all, y_test_all = self.get_train_test_data()
 
-        print('\npreprocessing train data...')
+        print('preprocessing train data...')
         for i in range(len(X_train_all)):
-            print('\n\tsubject ', i, '/', len(X_train_all))
+            print('\tsubject ', i, '/', len(X_train_all))
             x = X_train_all[i]
             y = y_train_all[i]
             px,py = self.preprocess_with_label(x,y)
@@ -145,7 +145,7 @@ class Preprocessor(object):
 
         print('\npreprocessing test data...')
         for i in range(len(X_test_all)):
-            print('\n\tsubject ', i, '/', len(X_train_all))
+            print('\tsubject ', i, '/', len(X_train_all))
             x = X_test_all[i]
             y = y_test_all[i]       
             px,py = self.preprocess_with_label(x,y)
@@ -177,7 +177,7 @@ class Preprocessor(object):
             train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)
         
         # Create datasets
-        print('\saveing datasets...')
+        print('saving datasets...')
         with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
             grp_train_x = hf.create_group("train_x")
             grp_train_y = hf.create_group("train_y")
