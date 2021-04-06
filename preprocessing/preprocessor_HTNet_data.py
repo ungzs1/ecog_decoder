@@ -28,7 +28,7 @@ class HTNet_preprocessor(Preprocessor):
         
     def get_train_test_data(self):
         '''returns an array of [[X_train1, y_train1], [X_train2,y_train2]...]'''
-         # define path to folder
+        # define path to folder
         my_path = os.path.abspath(os.path.dirname(__file__))
         path_to_data = os.path.join(my_path, "../data/raw_data/naturalistic_move_v_rest/")
         ecog_lp = path_to_data + 'ecog_dataset/' # data load path
@@ -40,6 +40,7 @@ class HTNet_preprocessor(Preprocessor):
 
         # loop through each subject
         for subject in self.subject_ids:
+            print('\nsubject')
             filename = ecog_lp + subject + '_ecog_data.nc'
 
             #get data
@@ -50,7 +51,6 @@ class HTNet_preprocessor(Preprocessor):
             X = data[:,:-1, 501:]
             X[np.isnan(X)] = 0 # set all NaN's to 0
             y = np.squeeze(data[:, -1, 0])
-            print('data shape: ',data.shape, 'X shape: ', X.shape, 'y shape: ', y.shape)
 
             #get train and test set
             test_day = int(np.unique(data_xr['events'][-1])) # test day is last day
@@ -62,8 +62,6 @@ class HTNet_preprocessor(Preprocessor):
 
             y_train = y[train_where]
             y_test = y[test_where]
-
-            print('X train shape: ', X_train.shape, 'y train shape: ', y_train.shape, 'X test shape: ', X_test.shape, 'y test shape: ', y_test.shape)
 
             #append to list
             X_all.append(X_train)
