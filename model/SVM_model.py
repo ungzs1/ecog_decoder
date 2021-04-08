@@ -2,18 +2,115 @@ from feature_transformation import *
 import os
 
 import numpy as np
-#from numpy import squeeze, power, mean, absolute, var, concatenate
+
 from sklearn import svm
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
-#from scipy.stats import ttest_ind
-#import matplotlib.pyplot as plt
-#import h5py
+
 import pickle
-#from pathlib import Path
-#from tabulate import tabulate
-#import csv
+from tabulate import tabulate
+
+def run(all_data, modelSettings, featureSettings):
+    # get data and labels
+    train_x = all_data['train_x']
+    train_y = all_data['train_y']
+    test_x = all_data['test_x']
+    test_y = all_data['test_y']
+
+    # set model settings as class variables
+    svmClassifier.set_class_vars(modelSettings)
+
+    # calculate classificatioin accuracy for each subject
+    for i, name in enumerate(list(train_x.keys())):
+        #if not name=='EC02':continue
+        print('########################################  subject: ', name, '  ################################################\n')
+        # get train/test data
+        # train
+        px_base = np.asarray(train_x[name])
+        px_base = np.transpose(px_base, axes=[2,1,0]) # reorder to ???(freq, channels, trials)
+        py_base = np.asarray(train_y[name])
+        # test
+        px_base_test = np.asarray(test_x[name])
+        px_base_test = np.transpose(px_base_test, axes=[2,1,0]) # reorder to ???(freq, channels, trials)
+        py_base_test = np.asarray(test_y[name])
+
+        # reshape feature vectors
+        trial_pairs=featureSettings['trial_pairs']
+        # train
+        px_dict, py_dict = featurevectors_by_trial(px_base, py_base, trial_types=trial_pairs['label_pairs'], 
+                                                    do_correlation_analysis=featureSettings['do_correlation_analysis'],
+                                                    correlation_pairs=featureSettings['correlation_pairs'],
+                                                    ranges=featureSettings['ranges'],
+                                                    corr_treshold=featureSettings['corr_treshold'])
+        # test
+        px_dict_test, py_dict_test = featurevectors_by_trial(px_base_test, py_base_test, trial_types=trial_pairs['label_pairs'], 
+                                                    do_correlation_analysis=featureSettings['do_correlation_analysis'],
+                                                    correlation_pairs=featureSettings['correlation_pairs'],
+                                                    ranges=featureSettings['ranges'],
+                                                    corr_treshold=featureSettings['corr_treshold'])
+
+        # loop through each featurevector for given patient
+        for j, featurevector in enumerate(px_dict):
+            # handle exception: when 0 valid channels or freq ranges found based on correlation values
+            '''if featurevector.shape[1] == 0:
+                for k in range(len(results)): results[k].append(-1)#?????????
+                continue'''
+            
+            # assign class variables
+            px = featurevector
+            py = py_dict[j]
+            px_test = px_dict_test[j]
+            py_test = py_dict_test[j]
+
+            #init class
+            my_model = svmClassifier(px=px, py=py, id=name, px_test=px_test, py_test=py_test)
+
+            # standardize data
+            my_model.standardize_featurevectors(same_scaler=featureSettings['same_scaler'])
+
+            ### BUILD AND SAVE MODELS ###
+            for model_type in modelSettings['model_types']:
+                # SINGLE FEATURE startegy
+                #my_model.single_feature() # this list stores accuracy of each feature for the given classification task
+                if model_type=='baseline':
+                    # BASELINE startegy
+                    print('**baseline')
+                    my_model.baseline()
+                elif model_type=='Nbest':
+                    # N-BEST startegy
+                    my_model.N_best(evaluation)
+                elif model_type == 'greedy':
+                    # GREEDY startegy
+                    print('**greedy')
+                    my_model.greedy()
+                elif model_type=='rGreedy':
+                    # reverse GREEDY startegy
+                    print('**greedy REVERSO')
+                    my_model.r_greedy()
+    
+    # save model settings
+    if modelSettings['save_info']:
+        # create save directory
+        if modelSettings['save_dir']==None:
+            raise ValueError('save directory not specified.')
+        else:
+            if not os.path.exists(modelSettings['save_dir']):
+                os.makedirs(modelSettings['save_dir'])
+
+        with open(modelSettings['save_dir']+'model_settings.pkl', 'wb') as f:
+            pickle.dump({'modelSettings':modelSettings, 'featureSettings':featureSettings}, f)
+
+    # save results
+    if modelSettings['save_info']:
+        with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
+            pickle.dump(svmClassifier.results,f)
+
+    # print results as table
+    results = svmClassifier.results
+    svmClassifier.print_results(results)
+    
+    return results
 
 class svmClassifier(object):
     """
@@ -374,6 +471,7 @@ class svmClassifier(object):
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
             '''
+    
     @classmethod
     def set_class_vars(cls, modelSettings):
         cls.scaler=modelSettings['scaler']
@@ -394,3 +492,44 @@ class svmClassifier(object):
         cls.multiple_rest=modelSettings['multiple_rest']
         cls.corr_treshold=modelSettings['corr_treshold']'''
 
+    @staticmethod
+    def print_results(results):
+        train_all=[]
+        test_all=[]
+        for name in results.keys():
+            print(name)
+            result = results[name]
+            headers=[]
+            train_row=['train']
+            test_row=['test']
+            for trial in result.keys():
+                if not trial =='greedy':
+                    train_row.append(round(result[trial][0], 2))
+                    test_row.append(round(result[trial][1], 2))
+                    train_all.append(round(result[trial][0],2))
+                    test_all.append(round(result[trial][1],2))
+                    headers.append(trial)
+                else:
+                    train_row.append(round(result[trial][0][-1], 2))
+                    test_row.append(round(result[trial][1][-1], 2))
+                    train_all.append(round(result[trial][0][-1]))
+                    test_all.append(round(result[trial][1][-1]))
+                    headers.append(trial)
+
+            table = tabulate([train_row, test_row], headers=headers)
+            print(table, '\n')
+        
+        print('mean')
+        train_mean = np.mean(np.reshape(train_all, (-1,len(headers))), axis=0)
+        train_std = np.std(np.reshape(train_all, (-1,len(headers))), axis=0)
+        test_mean = np.mean(np.reshape(test_all, (-1,len(headers))), axis=0)
+        test_std = np.std(np.reshape(test_all, (-1,len(headers))), axis=0)
+
+        train_out=['train']
+        test_out=['test']
+        for i, element in enumerate(train_mean):
+            train_out.append(str(round(element,2))+'+-'+str(round(train_std[i],2)))
+            test_out.append(str(round(test_mean[i],2))+'+-'+str(round(test_std[i],2)))
+
+        table2 = tabulate([train_out, test_out], headers=headers)
+        print(table2)
