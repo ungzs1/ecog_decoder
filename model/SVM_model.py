@@ -46,15 +46,26 @@ class svmClassifier(object):
             self.py_test=[]
         self.id=id
 
-    def standardize_featurevectors(self):
+    def standardize_featurevectors(self, same_scaler=True):
+        #reshape(flatten) training data
         self.px = np.asarray(self.px, dtype='double') # "Avoiding data copy: For SVC, SVR, NuSVC and NuSVR, if the data passed to certain methods is not C-ordered contiguous and double precision, it will be copied before calling the underlying C implementation."
-        a = np.transpose(self.px.reshape(-1, self.px.shape[-1]))
-        self.px = np.transpose(self.scaler.fit_transform(a)).reshape(self.px.shape)
+        px_temp = np.transpose(self.px.reshape(-1, self.px.shape[-1]))
 
+        # fit scaler to train data
+        scaler = self.scaler.fit(px_temp)    
+
+        # scale training data
+        self.px = np.transpose(scaler.transform(px_temp)).reshape(self.px.shape)
+
+        # scale test data (with the same scaler!!)
         if not self.px_test==[]:
             self.px_test = np.asarray(self.px_test, dtype='double') # "Avoiding data copy: For SVC, SVR, NuSVC and NuSVR, if the data passed to certain methods is not C-ordered contiguous and double precision, it will be copied before calling the underlying C implementation."
-            a = np.transpose(self.px_test.reshape(-1, self.px_test.shape[-1]))
-            self.px_test = np.transpose(self.scaler.fit_transform(a)).reshape(self.px_test.shape)
+            px_test_temp = np.transpose(self.px_test.reshape(-1, self.px_test.shape[-1]))
+            if same_scaler:
+                self.px_test = np.transpose(scaler.transform(px_test_temp)).reshape(self.px_test.shape)
+            else:
+                scaler_test = self.scaler.fit(px_test_temp)
+                self.px_test = np.transpose(scaler_test.transform(px_test_temp)).reshape(self.px_test.shape)
 
     def scoreModel(self, px, py):
         ## build model

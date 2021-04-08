@@ -29,7 +29,7 @@ modelSettings={
     'test_size':0.3,
     'greedy_max_features':-1,
     'reverse_greedy_min_features':-1,
-    'save_model':True,
+    'save_model':False,
     'save_dir':my_folder,
 }
 featureSettings={
@@ -38,6 +38,7 @@ featureSettings={
         'label_pairs':[(1,2)]
     },
     'ranges':[range(7,13), range(10,14), range(14,26), range(26,36), range(36,70), range(76,125)],#, range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
+    'same_scaler':False, # True: fit scaler to train data, scales train and test data with the same scaler. False: fit scaler to train data and test data, scales with the corresponding scaler
     'do_correlation_analysis':False,
     'correlation_pairs':None,
     'multiple_rest':False,
@@ -115,27 +116,27 @@ for i, name in enumerate(list(train_x.keys())):
         my_model = svmClassifier(px=px, py=py, id=name, px_test=px_test, py_test=py_test)
 
         # standardize data
-        my_model.standardize_featurevectors()
+        my_model.standardize_featurevectors(same_scaler=featureSettings['same_scaler'])
 
         ### BUILD AND SAVE MODELS ###
         
         # SINGLE FEATURE startegy
         #my_model.single_feature() # this list stores accuracy of each feature for the given classification task
-        '''
+        
         # BASELINE startegy
         print('**baseline')
-        my_model.baseline()'''
+        my_model.baseline()
         '''
         # N-BEST startegy
         my_model.N_best(evaluation)
         # GREEDY startegy
         print('**greedy')
         my_model.greedy()
-        '''
+        
         # reverse GREEDY startegy
         print('**greedy REVERSO')
         my_model.r_greedy()
-
+        '''
 # save results
 with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
     pickle.dump(svmClassifier.results,f)
