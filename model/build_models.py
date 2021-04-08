@@ -30,6 +30,7 @@ modelSettings={
     'greedy_max_features':-1,
     'reverse_greedy_min_features':-1,
     'save_model':False,
+    'save_info':True,
     'save_dir':my_folder,
 }
 featureSettings={
@@ -50,7 +51,7 @@ featureSettings={
 ### Call model and run functions that builds models ###
 #save settings
 
-if modelSettings['save_model']:
+if modelSettings['save_info']:
     # create save directory
     if modelSettings['save_dir']==None:
         raise ValueError('save directory not specified.')
@@ -138,8 +139,9 @@ for i, name in enumerate(list(train_x.keys())):
         my_model.r_greedy()
         '''
 # save results
-with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
-    pickle.dump(svmClassifier.results,f)
+if model['save_info']:
+    with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
+        pickle.dump(svmClassifier.results,f)
 
 # print results as table
 for name in svmClassifier.results.keys():
