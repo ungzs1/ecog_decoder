@@ -24,11 +24,11 @@ def run(all_data, modelSettings, featureSettings):
                 os.makedirs(modelSettings['save_dir'])
 
         # save as .pkl
-        with open(modelSettings['save_dir'] + 'model_settings.pkl', 'wb') as f:
+        with open(os.path.join(modelSettings['save_dir'], 'model_settings.pkl'), 'wb') as f:
             pickle.dump({'modelSettings': modelSettings, 'featureSettings': featureSettings}, f)
 
         # save as .txt
-        with open(modelSettings['save_dir'] + 'model_settings.txt', 'w') as f:
+        with open(os.path.join(modelSettings['save_dir'], 'model_settings.txt'), 'w') as f:
             f.write(str({'modelSettings': modelSettings, 'featureSettings': featureSettings}))
 
     # get data and labels
@@ -114,11 +114,11 @@ def run(all_data, modelSettings, featureSettings):
     # save results
     if modelSettings['save_info']:
         # save as .pkl
-        with open(modelSettings['save_dir'] + 'accs_all.pkl', 'wb') as f:
+        with open(os.path.join(modelSettings['save_dir'], 'accs_all.pkl'), 'wb') as f:
             pickle.dump(SvmClassifier.results, f)
 
         # save as .txt
-        with open(modelSettings['save_dir'] + 'accs_all.txt', 'w') as f:
+        with open(os.path.join(modelSettings['save_dir'], 'accs_all.txt'), 'w') as f:
             f.write(str(SvmClassifier.results))
 
     # print results as table
@@ -252,7 +252,7 @@ class SvmClassifier(object):
         # save the model to disk
         if self.save_model:
             filename = self.id + '_baseline_SVM.sav'
-            my_path = self.save_dir + filename
+            my_path = os.path.join(self.save_dir, filename)
 
             with open(my_path, 'wb') as f:
                 pickle.dump(model, f)
@@ -332,8 +332,8 @@ class SvmClassifier(object):
 
         # save fig
         filename = self.id + '_Nbest.png'
-        my_path = self.save_dir + filename
-        plt.savefig(os.path.join(my_path, filename))
+        my_path = os.path.join(self.save_dir, filename)
+        plt.savefig(my_path)
 
         # add result to global class variable
         '''if self.id not in SvmClassifier.results:
@@ -473,7 +473,7 @@ class SvmClassifier(object):
         if self.save_model:
             # save model
             filename = self.id + '_greedy_SVM.sav'
-            my_path = self.save_dir + filename
+            my_path = os.path.join(self.save_dir, filename)
             with open(my_path, 'wb') as f:
                 pickle.dump(model, f)
 
@@ -483,7 +483,7 @@ class SvmClassifier(object):
                       'test_set_result': best_features_in_trial_test['result']}
 
             filename = self.id + '_greedy_params.pkl'
-            my_path = self.save_dir + filename
+            my_path = os.path.join(self.save_dir, filename)
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
 

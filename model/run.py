@@ -8,8 +8,8 @@ from sklearn import svm
 
 # save dir
 root = os.path.abspath(os.path.dirname(__file__))
-database_folder = '../trained_models/htnet_data/'
-subfolder = 'plot_N_best/'
+database_folder = os.path.join('..', 'trained_models', 'htnet_data')
+subfolder = 'plot_N_best'
 my_folder = os.path.join(root, database_folder, subfolder)
 
 # clf = svm.NuSVC(decision_function_shape='ovo', class_weight='balanced', verbose=True)
