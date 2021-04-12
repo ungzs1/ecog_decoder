@@ -13,6 +13,16 @@ import json
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 
+
+def progress_bar(message, current, total, bar_length=20):
+    percent = float(current) * 100 / (total-1)
+    arrow = '#' * int(percent/100 * bar_length - 1) + '#'
+    spaces = '.' * (bar_length - len(arrow))
+    if not current == total-1:
+        print(message, ': [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
+    else:
+        print(message, ': [%s%s] %d %%' % (arrow, spaces, percent))
+
 def run(all_data, modelSettings, featureSettings):
     # save model settings
     if modelSettings['save_info']:
@@ -269,8 +279,10 @@ class SvmClassifier(object):
 
         # get accuracy for each channel, store in a dict of {rank, acc, ch, freq, feature}
         for ch in range(num_ch):
+            # print progress bar
+            progress_bar('calculate accuracy', ch, num_ch)
+
             for freq_range in range(num_ranges):
-                print(ch, freq_range)
                 # get current feature
                 px_temp = np.transpose(self.px[freq_range, ch, :]).reshape(-1, 1)
                 px_temp_test = np.transpose(self.px_test[freq_range, ch, :]).reshape(-1, 1)
@@ -289,7 +301,7 @@ class SvmClassifier(object):
 
         # build model from best 1,2,3...N channels and add rank to list
         for i, feature in enumerate(sorted(feature_dict, key=lambda j: j['accuracy'], reverse=True)):
-            print(i)
+            progress_bar('creating models', i, num_ch*num_ranges)
             feature['rank'] = i  # add rank key to dict for further usage
 
             # concatenate  first N features
@@ -310,8 +322,6 @@ class SvmClassifier(object):
             # add result to dict
             feature['n_best_acc'] = res_temp
             feature['n_best_acc_test'] = res_temp_test
-
-            print(res_temp, res_temp_test)
 
         # optionally plot result
         if plot:
