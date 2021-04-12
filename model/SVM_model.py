@@ -325,6 +325,7 @@ class SvmClassifier(object):
 
         # optionally plot result
         if plot:
+            plt.close()
             plt.plot([feature['accuracy'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
                      label='single acc')
             '''plt.scatter([feature['test_accuracy'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
@@ -333,17 +334,17 @@ class SvmClassifier(object):
                      label='n best acc')
             plt.plot([feature['n_best_acc_test'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
                      label='n best acc test')
-        plt.xlabel('feature no.')
-        plt.ylabel('accuracy')
-        plt.grid()
-        plt.legend()
-        plt.title(self.id)
-        #plt.show()
+            plt.xlabel('feature no.')
+            plt.ylabel('accuracy')
+            plt.grid()
+            plt.legend()
+            plt.title(self.id)
+            #plt.show()
 
-        # save fig
-        filename = self.id + '_Nbest.png'
-        my_path = os.path.join(self.save_dir, filename)
-        plt.savefig(my_path)
+            # save fig
+            filename = self.id + '_Nbest.png'
+            my_path = os.path.join(self.save_dir, filename)
+            plt.savefig(my_path)
 
         # add result to global class variable
         '''if self.id not in SvmClassifier.results:
