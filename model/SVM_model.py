@@ -316,6 +316,7 @@ class SvmClassifier(object):
         plt.ylabel('accuracy')
         plt.grid()
         plt.legend()
+        plt.title(self.id)
         #plt.show()
 
         # save fig
