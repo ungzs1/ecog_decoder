@@ -59,7 +59,7 @@ def get_correlation(px, py):
             
     return r_all, p_all
 
-def featurevectors_by_trial(px_base, py_base, trial_types, do_correlation_analysis=False, correlation_pairs=None, ranges=None, corr_treshold=1):
+def featurevectors_by_trial(px_base, py_base, trial_types, do_correlation_analysis=False, correlation_pairs=None, ranges=None, corr_threshold=1):
     '''This function reshapes the feature vector and reduces its size. Returns a list of N feature vectors, where N is the number of given trial pairs. 
     It calculates the mean power over the given frequency ranges. It     also ignores channels with p-value over 'corr_treshold' for the given trial type, 
     based on unpaired t-test (default is 'corr_treshold=1', where all channels are included)'''
@@ -90,7 +90,7 @@ def featurevectors_by_trial(px_base, py_base, trial_types, do_correlation_analys
                 p_HFB = p_all[1]
 
                 # get valid channels based on correlation and corr_treshold
-                valid_channels_temp = np.where(p_LFB<corr_treshold)+np.where(p_HFB<corr_treshold)
+                valid_channels_temp = np.where(p_LFB < corr_threshold) + np.where(p_HFB < corr_threshold)
                 valid_channels += valid_channels_temp
 
             valid_channels = np.concatenate(valid_channels, axis=0)

@@ -10,8 +10,21 @@ from sklearn.preprocessing import StandardScaler
 
 import pickle
 from tabulate import tabulate
+import matplotlib.pyplot as plt
 
 def run(all_data, modelSettings, featureSettings):
+    # save model settings
+    if modelSettings['save_info']:
+        # create save directory
+        if modelSettings['save_dir'] is None:
+            raise ValueError('save directory not specified.')
+        else:
+            if not os.path.exists(modelSettings['save_dir']):
+                os.makedirs(modelSettings['save_dir'])
+
+        with open(modelSettings['save_dir'] + 'model_settings.pkl', 'wb') as f:
+            pickle.dump({'modelSettings': modelSettings, 'featureSettings': featureSettings}, f)
+
     # get data and labels
     train_x = all_data['train_x']
     train_y = all_data['train_y']
@@ -19,36 +32,38 @@ def run(all_data, modelSettings, featureSettings):
     test_y = all_data['test_y']
 
     # set model settings as class variables
-    svmClassifier.set_class_vars(modelSettings)
+    SvmClassifier.set_class_vars(modelSettings)
 
-    # calculate classificatioin accuracy for each subject
+    # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        #if not name=='EC02':continue
-        print('########################################  subject: ', name, '  ################################################\n')
+        # if not name == 'EC02':continue
+        print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
         px_base = np.asarray(train_x[name])
-        px_base = np.transpose(px_base, axes=[2,1,0]) # reorder to ???(freq, channels, trials)
+        px_base = np.transpose(px_base, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
         py_base = np.asarray(train_y[name])
         # test
         px_base_test = np.asarray(test_x[name])
-        px_base_test = np.transpose(px_base_test, axes=[2,1,0]) # reorder to ???(freq, channels, trials)
+        px_base_test = np.transpose(px_base_test, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
         py_base_test = np.asarray(test_y[name])
 
         # reshape feature vectors
-        trial_pairs=featureSettings['trial_pairs']
+        trial_pairs = featureSettings['trial_pairs']
         # train
-        px_dict, py_dict = featurevectors_by_trial(px_base, py_base, trial_types=trial_pairs['label_pairs'], 
-                                                    do_correlation_analysis=featureSettings['do_correlation_analysis'],
-                                                    correlation_pairs=featureSettings['correlation_pairs'],
-                                                    ranges=featureSettings['ranges'],
-                                                    corr_treshold=featureSettings['corr_treshold'])
+        px_dict, py_dict = featurevectors_by_trial(px_base, py_base, trial_types=trial_pairs['label_pairs'],
+                                                   do_correlation_analysis=featureSettings['do_correlation_analysis'],
+                                                   correlation_pairs=featureSettings['correlation_pairs'],
+                                                   ranges=featureSettings['ranges'],
+                                                   corr_threshold=featureSettings['corr_threshold'])
         # test
-        px_dict_test, py_dict_test = featurevectors_by_trial(px_base_test, py_base_test, trial_types=trial_pairs['label_pairs'], 
-                                                    do_correlation_analysis=featureSettings['do_correlation_analysis'],
-                                                    correlation_pairs=featureSettings['correlation_pairs'],
-                                                    ranges=featureSettings['ranges'],
-                                                    corr_treshold=featureSettings['corr_treshold'])
+        px_dict_test, py_dict_test = featurevectors_by_trial(px_base_test, py_base_test,
+                                                             trial_types=trial_pairs['label_pairs'],
+                                                             do_correlation_analysis=featureSettings[
+                                                                 'do_correlation_analysis'],
+                                                             correlation_pairs=featureSettings['correlation_pairs'],
+                                                             ranges=featureSettings['ranges'],
+                                                             corr_threshold=featureSettings['corr_threshold'])
 
         # loop through each featurevector for given patient
         for j, featurevector in enumerate(px_dict):
@@ -56,107 +71,99 @@ def run(all_data, modelSettings, featureSettings):
             '''if featurevector.shape[1] == 0:
                 for k in range(len(results)): results[k].append(-1)#?????????
                 continue'''
-            
+
             # assign class variables
             px = featurevector
             py = py_dict[j]
             px_test = px_dict_test[j]
             py_test = py_dict_test[j]
 
-            #init class
-            my_model = svmClassifier(px=px, py=py, id=name, px_test=px_test, py_test=py_test)
+            # init class
+            my_model = SvmClassifier(px=px, py=py, patient_id=name, px_test=px_test, py_test=py_test)
 
             # standardize data
-            my_model.standardize_featurevectors(same_scaler=featureSettings['same_scaler'])
+            my_model.standardize_feature_vectors(same_scaler=featureSettings['same_scaler'])
 
-            ### BUILD AND SAVE MODELS ###
+            # BUILD AND SAVE MODELS ###
             for model_type in modelSettings['model_types']:
-                # SINGLE FEATURE startegy
-                #my_model.single_feature() # this list stores accuracy of each feature for the given classification task
-                if model_type=='baseline':
-                    # BASELINE startegy
+                # SINGLE FEATURE strategy
+                # my_model.single_feature()# this list stores accuracy of each feature for the given classification task
+                if model_type == 'baseline':
+                    # BASELINE strategy
                     print('**baseline')
                     my_model.baseline()
-                elif model_type=='Nbest':
-                    # N-BEST startegy
-                    my_model.N_best(evaluation)
+                elif model_type == 'Nbest':
+                    # N-BEST strategy
+                    print('**N best')
+                    my_model.n_best(plot=True)
                 elif model_type == 'greedy':
-                    # GREEDY startegy
+                    # GREEDY strategy
                     print('**greedy')
                     my_model.greedy()
-                elif model_type=='rGreedy':
-                    # reverse GREEDY startegy
+                elif model_type == 'rGreedy':
+                    # reverse GREEDY strategy
                     print('**greedy REVERSO')
                     my_model.r_greedy()
-    
-    # save model settings
-    if modelSettings['save_info']:
-        # create save directory
-        if modelSettings['save_dir']==None:
-            raise ValueError('save directory not specified.')
-        else:
-            if not os.path.exists(modelSettings['save_dir']):
-                os.makedirs(modelSettings['save_dir'])
-
-        with open(modelSettings['save_dir']+'model_settings.pkl', 'wb') as f:
-            pickle.dump({'modelSettings':modelSettings, 'featureSettings':featureSettings}, f)
 
     # save results
     if modelSettings['save_info']:
-        with open(modelSettings['save_dir']+'accs_all.pkl', 'wb') as f:
-            pickle.dump(svmClassifier.results,f)
+        with open(modelSettings['save_dir'] + 'accs_all.pkl', 'wb') as f:
+            pickle.dump(SvmClassifier.results, f)
 
     # print results as table
-    results = svmClassifier.results
-    svmClassifier.print_results(results)
-    
+    results = SvmClassifier.results
+    SvmClassifier.print_results(results)
+
     return results
 
-class svmClassifier(object):
+
+class SvmClassifier(object):
     """
     docstring
     """
     # SVM parameters
-    scaler=StandardScaler()
-    clf=svm.SVC()
-    evaluation='cross_val'
-    save_model=False
-    save_dir=None
-    cv=5
-    test_size=0.2
-    greedy_max_features=-1
-    r_greedy_min_features=-1
+    scaler = StandardScaler()
+    clf = svm.SVC()
+    evaluation = 'cross_val'
+    save_model = False
+    save_dir = None
+    cv = 5
+    test_size = 0.2
+    greedy_max_features = -1
+    r_greedy_min_features = -1
 
     # to collect results
-    results={}
+    results = {}
 
-    def __init__(self, id, px, py, px_test=None, py_test=None, *args, **kwargs):
-        self.px=px
-        self.py=py
+    def __init__(self, patient_id, px, py, px_test=None, py_test=None):
+        self.px = px
+        self.py = py
         if isinstance(px_test, np.ndarray):
-            self.px_test=px_test
-        else: 
-            self.px_test=[]
-        if  isinstance(px_test, np.ndarray):
-            self.py_test=py_test
-        else: 
-            self.py_test=[]
-        self.id=id
+            self.px_test = px_test
+        else:
+            self.px_test = []
+        if isinstance(px_test, np.ndarray):
+            self.py_test = py_test
+        else:
+            self.py_test = []
+        self.id = patient_id
 
-    def standardize_featurevectors(self, same_scaler=True):
-        #reshape(flatten) training data
-        self.px = np.asarray(self.px, dtype='double') # "Avoiding data copy: For SVC, SVR, NuSVC and NuSVR, if the data passed to certain methods is not C-ordered contiguous and double precision, it will be copied before calling the underlying C implementation."
+    def standardize_feature_vectors(self, same_scaler=True):
+        # reshape(flatten) training data
+        self.px = np.asarray(self.px, dtype='double')  # "Avoiding data copy: For SVC, SVR, NuSVC and NuSVR, if the data
+        # passed to certain methods is not C-ordered contiguous and double precision, it will be copied before calling
+        # the underlying C implementation."
         px_temp = np.transpose(self.px.reshape(-1, self.px.shape[-1]))
 
         # fit scaler to train data
-        scaler = self.scaler.fit(px_temp)    
+        scaler = self.scaler.fit(px_temp)
 
         # scale training data
         self.px = np.transpose(scaler.transform(px_temp)).reshape(self.px.shape)
 
         # scale test data (with the same scaler!!)
-        if not self.px_test==[]:
-            self.px_test = np.asarray(self.px_test, dtype='double') # "Avoiding data copy: For SVC, SVR, NuSVC and NuSVR, if the data passed to certain methods is not C-ordered contiguous and double precision, it will be copied before calling the underlying C implementation."
+        if not self.px_test == []:
+            self.px_test = np.asarray(self.px_test, dtype='double')
             px_test_temp = np.transpose(self.px_test.reshape(-1, self.px_test.shape[-1]))
             if same_scaler:
                 self.px_test = np.transpose(scaler.transform(px_test_temp)).reshape(self.px_test.shape)
@@ -164,22 +171,22 @@ class svmClassifier(object):
                 scaler_test = self.scaler.fit(px_test_temp)
                 self.px_test = np.transpose(scaler_test.transform(px_test_temp)).reshape(self.px_test.shape)
 
-    def scoreModel(self, px, py):
-        ## build model
+    def score_model(self, px, py):
+        # build model
         if self.evaluation == 'cross_val':
             scores = cross_val_score(self.clf, px, py, cv=self.cv)
             res = np.mean(scores)
-            #print(scores.mean(),scores.std())
+            # print(scores.mean(),scores.std())
+            return res
         elif self.evaluation == 'simple_split':
             X_train, X_test, y_train, y_test = train_test_split(px, py, test_size=self.test_size, shuffle=False)
             clf = self.clf.fit(X_train, y_train)
             score = clf.score(X_test, y_test)
             res = score
+            return res
         else:
             import warnings
-            warnings.warn("invalid evaluatuion mode '" + self.evaluation+"'")
-        
-        return res
+            warnings.warn("invalid evaluation mode '" + self.evaluation + "'")
 
     '''def single_feature(self):    ### SINGLE FEATURE IS GREEDY WITH SELECTED FEATURES SET TO 1!!!
         print('**single feature')
@@ -197,7 +204,8 @@ class svmClassifier(object):
                     scores = cross_val_score(self.clf, px_temp, self.py, cv=self.cv)
                     res_temp = scores.mean()#, scores.std()*2)
                 elif self.evaluation == 'simple_split':
-                    X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py, test_size=self.test_size, shuffle=False)
+                    X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py,
+                    test_size=self.test_size, shuffle=False)
                     clf = self.clf.fit(X_train, y_train)
                     score = clf.score(X_test, y_test)
                     res_temp = score
@@ -207,20 +215,18 @@ class svmClassifier(object):
 
         ## save result
         if self.id not in svmClassifier.results:
-            svmClassifier.results[self.id] = {'single':[],'baseline':[],'N_best':[], 'greedy':[]}
+            svmClassifier.results[self.id] = {'single':[],'baseline':[],'n_best':[], 'greedy':[]}
         svmClassifier.results[self.id]['single'].append(res)
         print('\taccuracy: ', res)'''
 
     def baseline(self):
         # fit px (featurevector) to required model input shape
-        # train
-        px_temp = np.transpose(self.px.reshape(-1,self.py.shape[0]))
-        # test
-        px_temp_test = np.transpose(self.px_test.reshape(-1,self.py_test.shape[0]))
-        
+        px_temp = np.transpose(self.px.reshape(-1, self.py.shape[0]))  # train
+        px_temp_test = np.transpose(self.px_test.reshape(-1, self.py_test.shape[0]))  # test
+
         # build and evaluate model, returns accuracy result
-        res = self.scoreModel(px_temp, self.py)
-        
+        res = self.score_model(px_temp, self.py)
+
         # build model on (final) px_temp
         model = self.clf.fit(px_temp, self.py)
 
@@ -228,23 +234,103 @@ class svmClassifier(object):
         res_test = model.score(px_temp_test, self.py_test)
 
         # add result to global class variable
-        if self.id not in svmClassifier.results:
-            svmClassifier.results[self.id] = {}
-        svmClassifier.results[self.id]['baseline'] = [res, res_test]
+        if self.id not in SvmClassifier.results:
+            SvmClassifier.results[self.id] = {}
+        SvmClassifier.results[self.id]['baseline'] = [res, res_test]
 
         # save the model to disk
-        if self.save_model:            
-            filename = self.id+'_baseline_SVM.sav'
-            my_path =  self.save_dir + filename
-            
+        if self.save_model:
+            filename = self.id + '_baseline_SVM.sav'
+            my_path = self.save_dir + filename
+
             with open(my_path, 'wb') as f:
                 pickle.dump(model, f)
-        
+
         # print results
         print('\taccuracy: ', round(res, 2), 'test accuracy: ', round(res_test, 2))
 
-    '''def N_best(self, plot=False):
-        print('**N_best')
+    def n_best(self, plot=False):
+        # init some variables
+        num_ch = self.px.shape[1]
+        num_ranges = self.px.shape[0]
+
+        feature_dict = []
+
+        # get accuracy for each channel, store in a dict of {rank, acc, ch, freq, feature}
+        for ch in range(num_ch):
+            for freq_range in range(num_ranges):
+                print(ch, freq_range)
+                # get current feature
+                px_temp = np.transpose(self.px[freq_range, ch, :]).reshape(-1, 1)
+                px_temp_test = np.transpose(self.px_test[freq_range, ch, :]).reshape(-1, 1)
+
+                # evaluate feature
+                res_temp = self.score_model(px_temp, self.py)
+
+                # test accuracy
+                model = self.clf.fit(px_temp, self.py)
+                res_temp_test = model.score(px_temp_test, self.py_test)
+
+                # locally save result to dict
+                feature_dict.append({'accuracy': res_temp, 'test_accuracy': res_temp_test,
+                                     'channel': ch, 'freq_range': freq_range,
+                                     'px_temp': px_temp, 'px_temp_test': px_temp_test})
+
+        # build model from best 1,2,3...N channels and add rank to list
+        for i, feature in enumerate(sorted(feature_dict, key=lambda j: j['accuracy'], reverse=True)):
+            print(i)
+            feature['rank'] = i  # add rank key to dict for further usage
+
+            # concatenate  first N features
+            if i == 0:
+                px_temp = feature['px_temp']
+                px_temp_test = feature['px_temp_test']
+            else:
+                px_temp = np.concatenate((px_temp, feature['px_temp']), axis=1)
+                px_temp_test = np.concatenate((px_temp_test, feature['px_temp_test']), axis=1)
+
+            # evaluate feature set acc
+            res_temp = self.score_model(px_temp, self.py)
+
+            # test accuracy
+            model = self.clf.fit(px_temp, self.py)
+            res_temp_test = model.score(px_temp_test, self.py_test)
+
+            # add result to dict
+            feature['n_best_acc'] = res_temp
+            feature['n_best_acc_test'] = res_temp_test
+
+            print(res_temp, res_temp_test)
+
+        # optionally plot result
+        if plot:
+            plt.plot([feature['accuracy'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
+                     label='single acc')
+            '''plt.scatter([feature['test_accuracy'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
+                     label='single acc test')'''
+            plt.plot([feature['n_best_acc'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
+                     label='n best acc')
+            plt.plot([feature['n_best_acc_test'] for feature in sorted(feature_dict, key=lambda j: j['rank'])],
+                     label='n best acc test')
+        plt.xlabel('feature no.')
+        plt.ylabel('accuracy')
+        plt.grid()
+        plt.legend()
+        #plt.show()
+
+        # save fig
+        filename = self.id + '_Nbest.png'
+        my_path = self.save_dir + filename
+        plt.savefig(os.path.join(my_path, filename))
+
+        # add result to global class variable
+        '''if self.id not in SvmClassifier.results:
+            SvmClassifier.results[self.id] = {}
+        SvmClassifier.results[self.id]['n_best'] = [???]'''
+
+        # save the model and selected parameters to disk
+
+    def n_best_old(self):
         # get accuracies for each featurevector
         accuracy = self.single_feature()
 
@@ -262,10 +348,10 @@ class svmClassifier(object):
             max_acc_channel = -1 # maximum accuracy achieved in this channel (init from -1)
             max_acc_range = -1 # maximum accuracy achieved in this range (init from -1)
 
-            # go through each individual featre accuracies
+            # go through each individual feature accuracies
             for ch in range(num_ch):
                 for freq in range(num_ranges):
-                    curr_acc = accuracy[freq,ch]
+                    curr_acc = accuracy[freq, ch]
                     if curr_acc > max_acc:
                         max_acc = curr_acc
                         max_acc_channel = ch
@@ -289,167 +375,169 @@ class svmClassifier(object):
                 scores = cross_val_score(self.clf, px_temp, self.py, cv=self.cv)
                 res.append(np.mean(scores))
             elif self.evaluation == 'simple_split':
-                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py, test_size=self.test_size, shuffle=False)
+                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py, 
+                test_size=self.test_size, shuffle=False)
                 clf = self.clf.fit(X_train, y_train)
                 score = clf.score(X_test, y_test)
                 res.append(score)
 
         if self.id not in self.results:
-            self.results[self.id] = {'single':[],'baseline':[],'N_best':[], 'greedy':[]}  
-        self.results['N_best'].append(res)'''
+            self.results[self.id] = {'single':[],'baseline':[],'n_best':[], 'greedy':[]}
+        self.results['n_best'].append(res)
 
     def greedy(self):
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        
-        #these two variables store selected feature set and accuracy in each iteration
-        best_features_in_trial = {'freq_range':[],'channel':[],'result':[],'px':[]} 
-        best_features_in_trial_test={'result':[], 'px':[]}
+
+        # these two variables store selected feature set and accuracy in each iteration
+        best_features_in_trial = {'freq_range': [], 'channel': [], 'result': [], 'px': []}
+        best_features_in_trial_test = {'result': [], 'px': []}
 
         max_found = False
-        curr_features = 0   # to count maximum features to be selected
-        
-        ## Find best feature set
+        curr_features = 0  # to count maximum features to be selected
+
+        # Find best feature set
         while not max_found:
-            #best_feature = {} # store the best feature in given trial_pair,channel
+            # best_feature = {} # store the best feature in given trial_pair,channel
             res = 0
 
             for ch in range(num_ch):
                 for freq_range in range(num_ranges):
                     # fit px (featurevector) to required model input shape
-                    px_temp = np.transpose(self.px[freq_range,ch,:]).reshape(-1,1)
-                    px_temp_test = np.transpose(self.px_test[freq_range,ch,:]).reshape(-1,1)
-                    
+                    px_temp = np.transpose(self.px[freq_range, ch, :]).reshape(-1, 1)
+                    px_temp_test = np.transpose(self.px_test[freq_range, ch, :]).reshape(-1, 1)
+
                     # concatenate current (n-th) features with best n-1 to get feature vector
-                    if len(best_features_in_trial['px'])!=0:
-                        px_temp = np.concatenate((best_features_in_trial['px'][-1],px_temp), axis=1)
+                    if len(best_features_in_trial['px']) != 0:
+                        px_temp = np.concatenate((best_features_in_trial['px'][-1], px_temp), axis=1)
                         px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
-                    
+
                     # build and evaluate model, returns accuracy result
-                    res_temp = self.scoreModel(px_temp, self.py)
+                    res_temp = self.score_model(px_temp, self.py)
 
                     # compare current px_temp accuracy with best px_temp accuracy, if better, store it
                     if res_temp > res:
                         res = res_temp
-                        best_feature = {'freq_range':freq_range,'channel':ch,'result':res,'px':px_temp}
+                        best_feature = {'freq_range': freq_range, 'channel': ch, 'result': res, 'px': px_temp}
                         best_feature_test = px_temp_test
                         # concatenate current (n-th) features with best n-1 to get feature vector
-            
+
             if (len(best_features_in_trial["result"]) > 1) and (not res > best_features_in_trial['result'][-1]):
                 max_found = True
-            else: 
+            else:
                 # build model on final feature set
                 model = self.clf.fit(best_feature['px'], self.py)
 
-                #store best feature set with n features, and its parameters
+                # store best feature set with n features, and its parameters
                 best_features_in_trial['freq_range'].append(best_feature['freq_range'])
                 best_features_in_trial['channel'].append(best_feature['channel'])
                 best_features_in_trial['result'].append(best_feature['result'])
                 best_features_in_trial['px'].append(best_feature['px'])
-                
-                res_test = model.score(best_feature_test, self.py_test) #to store test set accuracy
+
+                res_test = model.score(best_feature_test, self.py_test)  # to store test set accuracy
                 best_features_in_trial_test['result'].append(res_test)
                 best_features_in_trial_test['px'].append(best_feature_test)
-                
+
                 # increase current feature count
-                curr_features +=1
-                
-                #check if max number of features is reached
+                curr_features += 1
+
+                # check if max number of features is reached
                 if curr_features == self.greedy_max_features:
                     max_found = True
-                
-                #print progress
-                print('\tfeatures selected: ', curr_features, ', accuracy: ', round(best_feature['result'],2), 'test accuracy: ', round(res_test ,2))
 
-        ## add result to global class variable
-        res = best_features_in_trial['result'][-1]
-        if self.id not in svmClassifier.results:
-            svmClassifier.results[self.id] = {}
-        svmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0], best_features_in_trial_test['result'][0]]
-        svmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'], best_features_in_trial_test['result']]     
+                # print progress
+                print('\tfeatures selected: ', curr_features, ', accuracy: ', round(best_feature['result'], 2),
+                      'test accuracy: ', round(res_test, 2))
 
-        ## save the model and selected parameters to disk
+        # add result to global class variable
+        if self.id not in SvmClassifier.results:
+            SvmClassifier.results[self.id] = {}
+        SvmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0],
+                                                    best_features_in_trial_test['result'][0]]
+        SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
+                                                    best_features_in_trial_test['result']]
+
+        # save the model and selected parameters to disk
         if self.save_model:
             # save model
-            filename =  self.id+'_greedy_SVM.sav'
-            my_path =  self.save_dir + filename
-            with open(my_path, 'wb') as f:
-                pickle.dump(model, f)
-            
-            # save selected features
-            params = {'freq_range':[],'channel':[],'train_set_result':[],'test_set_results':[]} 
-            params['freq_range'] = best_features_in_trial['freq_range']
-            params['channel'] = best_features_in_trial['channel']
-            params['train_set_result'] = best_features_in_trial['result']
-            params['test_set_result'] = best_features_in_trial_test['result']
-
-            filename = self.id+'_greedy_params.pkl'
+            filename = self.id + '_greedy_SVM.sav'
             my_path = self.save_dir + filename
             with open(my_path, 'wb') as f:
-                pickle.dump(params, f)   
+                pickle.dump(model, f)
+
+            # save selected features
+            params = {'freq_range': best_features_in_trial['freq_range'], 'channel': best_features_in_trial['channel'],
+                      'train_set_result': best_features_in_trial['result'],
+                      'test_set_result': best_features_in_trial_test['result']}
+
+            filename = self.id + '_greedy_params.pkl'
+            my_path = self.save_dir + filename
+            with open(my_path, 'wb') as f:
+                pickle.dump(params, f)
 
     def r_greedy(self):
-        # from [freq, ch, trial] to [(frek x ch), trial]
-        px_return = np.transpose(self.px.reshape(-1,self.py.shape[0]))
-        px_return_test = np.transpose(self.px_test.reshape(-1,self.py_test.shape[0]))
+        # from [freq, ch, trial] to [(freq x ch), trial]
+        px_return = np.transpose(self.px.reshape(-1, self.py.shape[0]))
+        px_return_test = np.transpose(self.px_test.reshape(-1, self.py_test.shape[0]))
 
-        #these two variables store selected feature set and accuracy in each iteration
-        worst_features_in_trial = {'feature_id':[],'result':[],'px':[]} 
-        worst_features_in_trial_test={'result':[], 'px':[]}
+        # these two variables store selected feature set and accuracy in each iteration
+        worst_features_in_trial = {'feature_id': [], 'result': [], 'px': []}
+        worst_features_in_trial_test = {'result': [], 'px': []}
 
         max_found = False
-        curr_features = px_return.shape[1]   # to count maximum features to be excluded
-       
-        ## Find best feature set
+        curr_features = px_return.shape[1]  # to count maximum features to be excluded
+
+        # Find best feature set
         while not max_found:
             res = 0
 
             for i in range(px_return.shape[1]):
                 # fit px (featurevector) to required model input shape
                 px_temp = np.delete(px_return, i, axis=1)
-                
+
                 # build and evaluate model, returns accuracy result
-                res_temp = self.scoreModel(px_temp, self.py)
+                res_temp = self.score_model(px_temp, self.py)
 
                 # compare current px_temp accuracy with best px_temp accuracy, if better, store it
                 if res_temp > res:
                     res = res_temp
-                    worst_feature = {'feature_id':i,'result':res, 'px':px_temp}
-            
+                    worst_feature = {'feature_id': i, 'result': res, 'px': px_temp}
+
             if (len(worst_features_in_trial["result"]) > 1) and (not res > worst_features_in_trial['result'][-1]):
                 max_found = True
-            else: 
-                # get best featureset in current iteration
+            else:
+                # get best feature set in current iteration
                 px_return = worst_feature['px']
-                px_return_test =  np.delete(px_return_test, worst_feature['feature_id'], axis=1)
+                px_return_test = np.delete(px_return_test, worst_feature['feature_id'], axis=1)
 
                 # build model on final feature set
                 model = self.clf.fit(px_return, self.py)
 
-                #store best feature set with n features, and its parameters
+                # store best feature set with n features, and its parameters
                 worst_features_in_trial['feature_id'].append(worst_feature['feature_id'])
                 worst_features_in_trial['result'].append(worst_feature['result'])
                 worst_features_in_trial['px'].append(worst_feature['px'])
-                
-                res_test = model.score(px_return_test, self.py_test) #to store test set accuracy
+
+                res_test = model.score(px_return_test, self.py_test)  # to store test set accuracy
                 worst_features_in_trial_test['result'].append(res_test)
                 worst_features_in_trial_test['px'].append(px_return)
-                
+
                 # increase current feature count
-                curr_features -=1
-                
-                #check if max number of features is reached
+                curr_features -= 1
+
+                # check if max number of features is reached
                 if curr_features == self.r_greedy_min_features:
                     max_found = True
-                
-                #print progress
-                print('\tfeatures remaining: ', curr_features, ', accuracy: ', round(worst_feature['result'],2), 'test accuracy: ', round(res_test ,2))
-        
-        ## add result to global class variable
-        res = worst_features_in_trial['result'][-1]
-        if self.id not in svmClassifier.results:
-            svmClassifier.results[self.id] = {}
-        svmClassifier.results[self.id]['greedy Reverso'] = [worst_features_in_trial['result'], worst_features_in_trial_test['result']]     
+
+                # print progress
+                print('\tfeatures remaining: ', curr_features, ', accuracy: ', round(worst_feature['result'], 2),
+                      'test accuracy: ', round(res_test, 2))
+
+        # add result to global class variable
+        if self.id not in SvmClassifier.results:
+            SvmClassifier.results[self.id] = {}
+        SvmClassifier.results[self.id]['greedy Reverso'] = [worst_features_in_trial['result'],
+                                                            worst_features_in_trial_test['result']]
         '''
         ## save the model and selected parameters to disk
         if self.save_model:
@@ -471,18 +559,18 @@ class svmClassifier(object):
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
             '''
-    
+
     @classmethod
     def set_class_vars(cls, modelSettings):
-        cls.scaler=modelSettings['scaler']
-        cls.clf=modelSettings['clf']
-        cls.evaluation=modelSettings['evaluation']
-        cls.save_model=modelSettings['save_model']
-        cls.save_dir=modelSettings['save_dir']
-        cls.greedy_max_features=modelSettings['greedy_max_features']
-        cls.r_greedy_min_features
-        cls.cv=modelSettings['cv']
-        cls.test_size=modelSettings['test_size']
+        cls.scaler = modelSettings['scaler']
+        cls.clf = modelSettings['clf']
+        cls.evaluation = modelSettings['evaluation']
+        cls.save_model = modelSettings['save_model']
+        cls.save_dir = modelSettings['save_dir']
+        cls.greedy_max_features = modelSettings['greedy_max_features']
+        cls.r_greedy_min_features = modelSettings['reverse_greedy_min_features']
+        cls.cv = modelSettings['cv']
+        cls.test_size = modelSettings['test_size']
         '''
         # feature engineering parameters
         cls.trial_pairs=modelSettings['trial_pairs']
@@ -490,24 +578,24 @@ class svmClassifier(object):
         cls.do_correlation_analysis=modelSettings['do_correlation_analysis']
         cls.correlation_pairs=modelSettings['correlation_pairs']
         cls.multiple_rest=modelSettings['multiple_rest']
-        cls.corr_treshold=modelSettings['corr_treshold']'''
+        cls.corr_threshold=modelSettings['corr_threshold']'''
 
     @staticmethod
     def print_results(results):
-        train_all=[]
-        test_all=[]
+        train_all = []
+        test_all = []
         for name in results.keys():
             print(name)
             result = results[name]
-            headers=[]
-            train_row=['train']
-            test_row=['test']
+            headers = []
+            train_row = ['train']
+            test_row = ['test']
             for trial in result.keys():
-                if not trial =='greedy':
+                if not trial == 'greedy':
                     train_row.append(round(result[trial][0], 2))
                     test_row.append(round(result[trial][1], 2))
-                    train_all.append(round(result[trial][0],2))
-                    test_all.append(round(result[trial][1],2))
+                    train_all.append(round(result[trial][0], 2))
+                    test_all.append(round(result[trial][1], 2))
                     headers.append(trial)
                 else:
                     train_row.append(round(result[trial][0][-1], 2))
@@ -518,18 +606,60 @@ class svmClassifier(object):
 
             table = tabulate([train_row, test_row], headers=headers)
             print(table, '\n')
-        
-        print('mean')
-        train_mean = np.mean(np.reshape(train_all, (-1,len(headers))), axis=0)
-        train_std = np.std(np.reshape(train_all, (-1,len(headers))), axis=0)
-        test_mean = np.mean(np.reshape(test_all, (-1,len(headers))), axis=0)
-        test_std = np.std(np.reshape(test_all, (-1,len(headers))), axis=0)
 
-        train_out=['train']
-        test_out=['test']
+        print('mean')
+        train_mean = np.mean(np.reshape(train_all, (-1, len(headers))), axis=0)
+        train_std = np.std(np.reshape(train_all, (-1, len(headers))), axis=0)
+        test_mean = np.mean(np.reshape(test_all, (-1, len(headers))), axis=0)
+        test_std = np.std(np.reshape(test_all, (-1, len(headers))), axis=0)
+
+        train_out = ['train']
+        test_out = ['test']
         for i, element in enumerate(train_mean):
-            train_out.append(str(round(element,2))+'+-'+str(round(train_std[i],2)))
-            test_out.append(str(round(test_mean[i],2))+'+-'+str(round(test_std[i],2)))
+            train_out.append(str(round(element, 2)) + '+-' + str(round(train_std[i], 2)))
+            test_out.append(str(round(test_mean[i], 2)) + '+-' + str(round(test_std[i], 2)))
 
         table2 = tabulate([train_out, test_out], headers=headers)
         print(table2)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
