@@ -9,6 +9,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 
 import pickle
+import json
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 
@@ -22,8 +23,13 @@ def run(all_data, modelSettings, featureSettings):
             if not os.path.exists(modelSettings['save_dir']):
                 os.makedirs(modelSettings['save_dir'])
 
+        # save as .pkl
         with open(modelSettings['save_dir'] + 'model_settings.pkl', 'wb') as f:
             pickle.dump({'modelSettings': modelSettings, 'featureSettings': featureSettings}, f)
+
+        # save as .txt
+        with open(modelSettings['save_dir'] + 'model_settings.txt', 'w') as f:
+            f.write(str({'modelSettings': modelSettings, 'featureSettings': featureSettings}))
 
     # get data and labels
     train_x = all_data['train_x']
@@ -36,7 +42,7 @@ def run(all_data, modelSettings, featureSettings):
 
     # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        # if not name == 'EC02':continue
+        if not name == 'EC02':continue
         print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
@@ -107,8 +113,13 @@ def run(all_data, modelSettings, featureSettings):
 
     # save results
     if modelSettings['save_info']:
+        # save as .pkl
         with open(modelSettings['save_dir'] + 'accs_all.pkl', 'wb') as f:
             pickle.dump(SvmClassifier.results, f)
+
+        # save as .txt
+        with open(modelSettings['save_dir'] + 'accs_all.txt', 'w') as f:
+            f.write(str(SvmClassifier.results))
 
     # print results as table
     results = SvmClassifier.results

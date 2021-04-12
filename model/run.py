@@ -20,7 +20,7 @@ modelSettings = {
     'evaluation': 'cross_val',
     'cv': 5,
     'test_size': 0.3,
-    'model_types': ['baseline', 'Nbest'],  # , 'greedy']
+    'model_types': ['baseline', 'Nbest'],  # 'baseline', 'Nbest', 'greedy', 'rGreedy'
     'greedy_max_features': -1,
     'reverse_greedy_min_features': -1,
     'save_model': False,
