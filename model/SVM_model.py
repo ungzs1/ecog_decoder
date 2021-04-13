@@ -51,7 +51,7 @@ def run(all_data, modelSettings, featureSettings):
 
     # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        #if not name == 'EC02':continue
+        if not name == 'EC02':continue
         print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
@@ -139,7 +139,6 @@ def run(all_data, modelSettings, featureSettings):
             for result in tables_all:
                 f.write(result['name'] + '\n')
                 f.write(result['table'] + '\n\n')
-
             f.write('mean\n')
             f.write(table2)
 
@@ -355,9 +354,12 @@ class SvmClassifier(object):
             plt.savefig(my_path)
 
         # add result to global class variable
-        '''if self.id not in SvmClassifier.results:
+        if self.id not in SvmClassifier.results:
             SvmClassifier.results[self.id] = {}
-        SvmClassifier.results[self.id]['n_best'] = [???]'''
+        SvmClassifier.results[self.id]['Nbest'] = [{key: feature[key] for key in ['rank', 'accuracy', 'n_best_acc',
+                                                                                  'n_best_acc_test', 'channel',
+                                                                                  'freq_range']} for feature in
+                                                   sorted(feature_dict, key=lambda j: j['rank'])]
 
         # save the model and selected parameters to disk
 
@@ -413,7 +415,7 @@ class SvmClassifier(object):
                 res.append(score)
 
         if self.id not in self.results:
-            self.results[self.id] = {'single':[],'baseline':[],'n_best':[], 'greedy':[]}
+            self.results[self.id] = {'single':[], 'baseline':[],'n_best':[], 'greedy':[]}
         self.results['n_best'].append(res)
 
     def greedy(self):
@@ -486,7 +488,9 @@ class SvmClassifier(object):
         SvmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0],
                                                     best_features_in_trial_test['result'][0]]
         SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
-                                                    best_features_in_trial_test['result']]
+                                                    best_features_in_trial_test['result'],
+                                                    best_features_in_trial['channel'],
+                                                    best_features_in_trial['freq_range']]  #TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
 
         # save the model and selected parameters to disk
         if self.save_model:
@@ -629,6 +633,8 @@ class SvmClassifier(object):
                     train_all.append(round(result[trial][0][-1], 2))
                     test_all.append(round(result[trial][1][-1], 2))
                     headers.append(trial)
+                if trial == 'Nbest':
+                    continue  # TODO megirni ezt
                 else:
                     train_row.append(round(result[trial][0], 2))
                     test_row.append(round(result[trial][1], 2))
