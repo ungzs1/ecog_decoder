@@ -9,7 +9,6 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 
 import pickle
-import json
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 
@@ -52,7 +51,7 @@ def run(all_data, modelSettings, featureSettings):
 
     # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        if not name == 'EC02':continue
+        #if not name == 'EC02':continue
         print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
@@ -411,6 +410,7 @@ class SvmClassifier(object):
     def greedy(self):
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
+        freq_range = np.arange(num_ranges) # to use all ranges, i.e to only select features
 
         # these two variables store selected feature set and accuracy in each iteration
         best_features_in_trial = {'freq_range': [], 'channel': [], 'result': [], 'px': []}
@@ -421,30 +421,29 @@ class SvmClassifier(object):
 
         # Find best feature set
         while not max_found:
-            # best_feature = {} # store the best feature in given trial_pair,channel
+            # find next best feature
             res = 0
-
             for ch in range(num_ch):
-                for freq_range in range(num_ranges):
-                    # fit px (featurevector) to required model input shape
-                    px_temp = np.transpose(self.px[freq_range, ch, :]).reshape(-1, 1)
-                    px_temp_test = np.transpose(self.px_test[freq_range, ch, :]).reshape(-1, 1)
+                # fit px (featurevector) to required model input shape
+                px_temp = np.transpose(self.px[freq_range, ch, :])
+                px_temp_test = np.transpose(self.px_test[freq_range, ch, :])
 
-                    # concatenate current (n-th) features with best n-1 to get feature vector
-                    if len(best_features_in_trial['px']) != 0:
-                        px_temp = np.concatenate((best_features_in_trial['px'][-1], px_temp), axis=1)
-                        px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
+                # concatenate current (n-th) features with best n-1 to get feature vector
+                if len(best_features_in_trial['px']) != 0:
+                    px_temp = np.concatenate((best_features_in_trial['px'][-1], px_temp), axis=1)
+                    px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
 
-                    # build and evaluate model, returns accuracy result
-                    res_temp = self.score_model(px_temp, self.py)
+                # build and evaluate model, returns accuracy result
+                res_temp = self.score_model(px_temp, self.py)
 
-                    # compare current px_temp accuracy with best px_temp accuracy, if better, store it
-                    if res_temp > res:
-                        res = res_temp
-                        best_feature = {'freq_range': freq_range, 'channel': ch, 'result': res, 'px': px_temp}
-                        best_feature_test = px_temp_test
-                        # concatenate current (n-th) features with best n-1 to get feature vector
+                # compare current px_temp accuracy with best px_temp accuracy, if better, store it
+                if res_temp > res:
+                    res = res_temp
+                    best_feature = {'freq_range': freq_range, 'channel': ch, 'result': res, 'px': px_temp}
+                    best_feature_test = px_temp_test
 
+            # add next best feature to preciously selected set of features (if conditions stand)
+            # and evaluate on test set
             if (len(best_features_in_trial["result"]) > 1) and (not res > best_features_in_trial['result'][-1]):
                 max_found = True
             else:
@@ -498,7 +497,7 @@ class SvmClassifier(object):
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
 
-    def r_greedy(self):
+    '''def r_greedy(self):
         # from [freq, ch, trial] to [(freq x ch), trial]
         px_return = np.transpose(self.px.reshape(-1, self.py.shape[0]))
         px_return_test = np.transpose(self.px_test.reshape(-1, self.py_test.shape[0]))
@@ -561,8 +560,8 @@ class SvmClassifier(object):
             SvmClassifier.results[self.id] = {}
         SvmClassifier.results[self.id]['greedy Reverso'] = [worst_features_in_trial['result'],
                                                             worst_features_in_trial_test['result']]
-        '''
-        ## save the model and selected parameters to disk
+    
+        # save the model and selected parameters to disk
         if self.save_model:
             # save model
             filename =  self.id+'_greedy_SVM.sav'
@@ -581,7 +580,7 @@ class SvmClassifier(object):
             my_path = self.save_dir + filename
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
-            '''
+    '''
 
     @classmethod
     def set_class_vars(cls, modelSettings):
@@ -614,17 +613,17 @@ class SvmClassifier(object):
             train_row = ['train']
             test_row = ['test']
             for trial in result.keys():
-                if not trial == 'greedy':
+                if trial == 'greedy':
+                    train_row.append(round(result[trial][0][-1], 2))
+                    test_row.append(round(result[trial][1][-1], 2))
+                    train_all.append(round(result[trial][0][-1], 2))
+                    test_all.append(round(result[trial][1][-1], 2))
+                    headers.append(trial)
+                else:
                     train_row.append(round(result[trial][0], 2))
                     test_row.append(round(result[trial][1], 2))
                     train_all.append(round(result[trial][0], 2))
                     test_all.append(round(result[trial][1], 2))
-                    headers.append(trial)
-                else:
-                    train_row.append(round(result[trial][0][-1], 2))
-                    test_row.append(round(result[trial][1][-1], 2))
-                    train_all.append(round(result[trial][0][-1]))
-                    test_all.append(round(result[trial][1][-1]))
                     headers.append(trial)
 
             table = tabulate([train_row, test_row], headers=headers)
@@ -644,6 +643,8 @@ class SvmClassifier(object):
 
         table2 = tabulate([train_out, test_out], headers=headers)
         print(table2)
+
+        return table, table2
 
 
 

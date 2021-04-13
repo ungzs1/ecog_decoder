@@ -9,7 +9,7 @@ from sklearn import svm
 # save dir
 root = os.path.abspath(os.path.dirname(__file__))
 database_folder = os.path.join('..', 'trained_models', 'htnet_data')
-subfolder = 'plot_N_best'
+subfolder = 'greedy_only_ch'
 my_folder = os.path.join(root, database_folder, subfolder)
 
 # clf = svm.NuSVC(decision_function_shape='ovo', class_weight='balanced', verbose=True)
@@ -17,10 +17,10 @@ my_folder = os.path.join(root, database_folder, subfolder)
 modelSettings = {
     'scaler': StandardScaler(),
     'clf': svm.SVC(),
-    'evaluation': 'cross_val',
+    'evaluation': 'cross_val',  # 'simple_split' or 'cross_val'
     'cv': 5,
     'test_size': 0.3,
-    'model_types': ['baseline', 'Nbest'],  # 'baseline', 'Nbest', 'greedy', 'rGreedy'
+    'model_types': ['baseline','greedy'],  # 'baseline', 'Nbest', 'greedy', 'rGreedy'
     'greedy_max_features': -1,
     'reverse_greedy_min_features': -1,
     'save_model': False,
