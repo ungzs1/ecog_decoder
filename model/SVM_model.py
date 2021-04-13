@@ -135,9 +135,7 @@ def run(all_data, modelSettings, featureSettings):
             f.write(str(SvmClassifier.results))
 
         # save summary as .txt
-        with open(
-                '/media/ungzs10/F8426F05426EC7C8/Zsombi/MTA/ecog/trained_models/htnet_data/no_ranges/accs_summary.txt',
-                'w') as f:
+        with open(os.path.join(modelSettings['save_dir'], 'accs_summary.txt'), 'w') as f:
             for result in tables_all:
                 f.write(result['name'] + '\n')
                 f.write(result['table'] + '\n\n')
