@@ -120,6 +120,10 @@ def run(all_data, modelSettings, featureSettings):
                     print('**greedy REVERSO')
                     my_model.r_greedy()
 
+    # print results as table
+    results = SvmClassifier.results
+    tables_all, table2 = SvmClassifier.print_results(results)
+
     # save results
     if modelSettings['save_info']:
         # save as .pkl
@@ -130,9 +134,16 @@ def run(all_data, modelSettings, featureSettings):
         with open(os.path.join(modelSettings['save_dir'], 'accs_all.txt'), 'w') as f:
             f.write(str(SvmClassifier.results))
 
-    # print results as table
-    results = SvmClassifier.results
-    SvmClassifier.print_results(results)
+        # save summary as .txt
+        with open(
+                '/media/ungzs10/F8426F05426EC7C8/Zsombi/MTA/ecog/trained_models/htnet_data/no_ranges/accs_summary.txt',
+                'w') as f:
+            for result in tables_all:
+                f.write(result['name'] + '\n')
+                f.write(result['table'] + '\n\n')
+
+            f.write('mean\n')
+            f.write(table2)
 
     return results
 
@@ -606,6 +617,7 @@ class SvmClassifier(object):
     def print_results(results):
         train_all = []
         test_all = []
+        tables_all = []
         for name in results.keys():
             print(name)
             result = results[name]
@@ -627,6 +639,7 @@ class SvmClassifier(object):
                     headers.append(trial)
 
             table = tabulate([train_row, test_row], headers=headers)
+            tables_all.append({'name': name, 'table': table})
             print(table, '\n')
 
         print('mean')
@@ -644,9 +657,7 @@ class SvmClassifier(object):
         table2 = tabulate([train_out, test_out], headers=headers)
         print(table2)
 
-        return table, table2
-
-
+        return tables_all, table2
 
 
 
