@@ -149,7 +149,7 @@ class Preprocessor(object):
 
         print('reading and preprocessing data...')
         for i, subject in enumerate(Preprocessor.subject_ids):
-            print('\t{}/{}\n\tpatient id: {}'.format(i+1, len(Preprocessor.subject_ids), subject))
+            print("\t{}/{}:\tpatient '{}'".format(i+1, len(Preprocessor.subject_ids), subject))
 
             # get train and test data for current subject
             X_train, y_train, X_test, y_test = self.get_train_test_data(subject)
@@ -195,6 +195,10 @@ class Preprocessor(object):
 
         # Create datasets
         print('saving datasets...')
+
+        if not os.path.exists(self.config["save_dir"]):
+            os.makedirs(self.config["save_dir"])
+
         with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
             grp_train_x = hf.create_group("train_x")
             grp_train_y = hf.create_group("train_y")
@@ -209,9 +213,6 @@ class Preprocessor(object):
             if self.config["create_validation_bool"]:
                 hf.create_dataset("val_x", data=val_x)
                 hf.create_dataset("val_y", data=val_y)
-
-        if not os.path.exists(self.config["save_dir"]):
-            os.makedirs(self.config["save_dir"])
 
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
             root = {"root": self.config}
