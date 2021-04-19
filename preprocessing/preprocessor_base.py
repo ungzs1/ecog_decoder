@@ -25,10 +25,10 @@ def butter_bandpass_filter(data, lowcut, highcut, fs, order=5, axis=0, btype="ba
     return y
 
 
-def notch_filtering(data, fs, line_freq, psd_range):
+def notch_filtering(data, fs, line_freq, freq_range):
     # removes line frequency noise and multiples from the signal
 
-    multiples_linefreq = range(line_freq, psd_range[1], line_freq)  # line frequency and multiples eg. [60,120,180]
+    multiples_linefreq = range(line_freq, freq_range[1], line_freq)  # line frequency and multiples eg. [60,120,180]
 
     for f0 in multiples_linefreq:
         w0 = f0 / (fs / 2)  # Normalized Frequency
@@ -100,8 +100,6 @@ def config_post(path, key, value):
 class Preprocessor(object):
     fs = -1  # sampling rate
     line_freq = -1  # line freq = 60 Hz
-    blocksize = np.floor(fs * 0.25)  # minimum block size of trials, shorter trials ignored.
-    # Default: blocksize=floor(fs*0.25) window length of PSD
     time_range = (0, -1)  # set time range of trials to use in a tuple of (first data, last data),
     # eg (1000,-500) ignores first 1000 and last 500 data points. Default: PSD_time_range=(0,-1) to use whole range
     freq_range = (0, 200)  # range of Power Spectrum, min and max freq in a tuple eg.(0,200)
@@ -155,16 +153,12 @@ class Preprocessor(object):
             X_train, y_train, X_test, y_test = self.get_train_test_data(subject)
 
             # preprocess train data
-            x = X_train
-            y = y_train
-            px, py = self.preprocess_with_label(x, y)
+            px, py = self.preprocess_with_label(X_train, y_train)
             train_x.append(px)
             train_y.append(py)
 
             # preprocess test data
-            x = X_test
-            y = y_test
-            px, py = self.preprocess_with_label(x, y)
+            px, py = self.preprocess_with_label(X_test, y_test)
             test_x.append(px)
             test_y.append(py)
 
@@ -215,6 +209,7 @@ class Preprocessor(object):
                 hf.create_dataset("val_y", data=val_y)
 
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
+            self.config["time_range"] = self.time_range
             root = {"root": self.config}
             fd.write(xmltodict.unparse(root, pretty=True))
 
