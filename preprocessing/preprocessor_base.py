@@ -209,7 +209,7 @@ class Preprocessor(object):
                 hf.create_dataset("val_y", data=val_y)
 
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
-            self.config["time_range"] = self.time_range
+            self.config["time_range"] = str(self.time_range)
             root = {"root": self.config}
             fd.write(xmltodict.unparse(root, pretty=True))
 
