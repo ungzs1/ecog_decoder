@@ -19,7 +19,12 @@ except ImportError:
 
 time_ranges = [(500, -1), (500, -100), (500, -200), (500, -300), (500, -400)]
 for time_range in time_ranges:
-    HtnetPreprocessor().__init__()
-    HtnetPreprocessor().time_range = time_range
-    HtnetPreprocessor().run()
+    preprocessor = HtnetPreprocessor()
+    preprocessor.time_range = time_range
+    preprocessor.config['save_name'] = "HTNet_data_{}_{}.hdf5".format(time_range[0],
+                                                                      time_range[1])
+    preprocessor.config['default_config_name'] = "HTNet_CONFIG_{}_{}".format(time_range[0],
+                                                                             time_range[1])
+    print(preprocessor.config['save_name'])
+    preprocessor.run()
 

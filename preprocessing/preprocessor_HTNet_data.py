@@ -21,10 +21,8 @@ class HtnetPreprocessor(Preprocessor):
         self.config["data_source"] = "naturalistic hand move v. rest"
         self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'data',
                                                'preprocessed_data', 'HTNet_data')
-        self.config["save_name"] = "HTNet_data_{}_{}.hdf5".format(Preprocessor.time_range[0],
-                                                                  Preprocessor.time_range[1])
-        self.config["default_config_name"] = 'HTNet_CONFIG_{}_{}'.format(Preprocessor.time_range[0],
-                                                                         Preprocessor.time_range[1])
+        self.config["save_name"] = "HTNet_data.hdf5"
+        self.config["default_config_name"] = "HTNet_CONFIG"
         self.config["create_validation_bool"] = False
 
         # define path to folder
