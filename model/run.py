@@ -1,4 +1,4 @@
-from SVM_model import *
+from svm_base import *
 import os
 import h5py
 from sklearn.preprocessing import StandardScaler
@@ -8,8 +8,8 @@ from sklearn import svm
 
 # save dir
 root = os.path.abspath(os.path.dirname(__file__))
-database_folder = os.path.join('..', 'trained_models', 'htnet_data')
-subfolder = 'greedy_only_ch'
+database_folder = os.path.join('..', 'trained_models', 'HTNet')
+subfolder = 'del'
 my_folder = os.path.join(root, database_folder, subfolder)
 
 # clf = svm.NuSVC(decision_function_shape='ovo', class_weight='balanced', verbose=True)
@@ -20,11 +20,11 @@ modelSettings = {
     'evaluation': 'cross_val',  # 'simple_split' or 'cross_val'
     'cv': 5,
     'test_size': 0.3,
-    'model_types': ['baseline','greedy'],  # 'baseline', 'Nbest', 'greedy', 'rGreedy'
+    'model_types': ['baseline'],  # , 'Nbest'],  # 'baseline', 'Nbest', 'greedy', 'rGreedy'
     'greedy_max_features': -1,
     'reverse_greedy_min_features': -1,
     'save_model': False,
-    'save_info': True,
+    'save_info': True,  # if True, results not only displayed in the terminal but also saved.
     'save_dir': my_folder
 }
 featureSettings = {
@@ -43,9 +43,9 @@ featureSettings = {
     'corr_threshold': 1
 }
 
-### build and save models ###
+# *** BUILD AND SAVE MODELS ***
 
-## Call model and run functions that builds models ###
+# Call model and run functions that builds models ###
 # save settings
 
 # load data
@@ -53,18 +53,3 @@ path_to_data = os.path.join(root, "../data/preprocessed_data/HTNet_data_preproce
 all_data = h5py.File(path_to_data, 'r')
 
 run(all_data, modelSettings, featureSettings)
-
-'''
-C = [5, 10, 50]
-gamma = [0.01, 0.001, 0.0001]
-c = 10
-g = 0.001
-for c in C:
-    for g in gamma:
-        print(c, g)
-        # modelSettings['clf'] = svm.NuSVC(decision_function_shape='ovo', class_weight='balanced', verbose=True)
-
-        modelSettings['clf'] = svm.SVC(C=c, gamma=g)
-        # modelSettings['save_dir'] = 'c_'+str(c)+'_g_'+str(g)
-        # run models
-        run(all_data, modelSettings, featureSettings)'''

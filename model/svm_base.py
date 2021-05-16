@@ -1,4 +1,4 @@
-from feature_transformation import *
+from utils import *
 import os
 
 import numpy as np
@@ -12,15 +12,6 @@ import pickle
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 
-
-def progress_bar(message, current, total, bar_length=20):
-    percent = float(current) * 100 / (total-1)
-    arrow = '#' * int(percent/100 * bar_length - 1) + '#'
-    spaces = '.' * (bar_length - len(arrow))
-    if not current == total-1:
-        print(message, ': [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
-    else:
-        print(message, ': [%s%s] %d %%' % (arrow, spaces, percent))
 
 def run(all_data, modelSettings, featureSettings):
     # save model settings
@@ -51,7 +42,7 @@ def run(all_data, modelSettings, featureSettings):
 
     # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        if not name == 'EC02':continue
+        # if not name == 'EC02':continue
         print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
@@ -164,6 +155,13 @@ class SvmClassifier(object):
     results = {}
 
     def __init__(self, patient_id, px, py, px_test=None, py_test=None):
+        self.data = None
+        self.patients = None
+        self.sp = None
+        self.lp = None
+        self.model_settings = None
+        self.feature_settings = None
+
         self.px = px
         self.py = py
         if isinstance(px_test, np.ndarray):
@@ -617,6 +615,16 @@ class SvmClassifier(object):
 
     @staticmethod
     def print_results(results):
+        """
+        Prints and returns results in a user-friendly format.
+
+        Returns
+        -----------
+        tables_all :
+            List of all results in a table format.
+        tables_mean :
+            Mean and std of the results in table format.
+        """
         train_all = []
         test_all = []
         tables_all = []
@@ -658,10 +666,10 @@ class SvmClassifier(object):
             train_out.append(str(round(element, 2)) + '+-' + str(round(train_std[i], 2)))
             test_out.append(str(round(test_mean[i], 2)) + '+-' + str(round(test_std[i], 2)))
 
-        table2 = tabulate([train_out, test_out], headers=headers)
-        print(table2)
+        table_mean = tabulate([train_out, test_out], headers=headers)
+        print(table_mean)
 
-        return tables_all, table2
+        return tables_all, table_mean
 
 
 
