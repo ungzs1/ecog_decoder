@@ -16,8 +16,8 @@ class SvmHTdata(SvmClassifier):
         self.data = h5py.File(lp, 'r')
 
         # save settings
-        self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data')
-        # self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data', 'del')
+        # self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data')
+        self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data', 'dell')
         self.save_model = False
         self.save_info = True  # if True, results not only displayed in the terminal but also saved.
 
@@ -27,7 +27,7 @@ class SvmHTdata(SvmClassifier):
             'label_pairs': [(1, 2)]
         }
         self.label_pairs = [(1, 2)]
-        self.ranges = [range(7, 13), range(10, 14), range(14, 26), range(26, 36), range(36, 70), range(76, 125)],
+        self.ranges = [range(7, 13), range(10, 14), range(14, 26), range(26, 36), range(36, 70), range(76, 125)]
         # , range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
         self.same_scaler = False
         # True: fit scaler to train data, scales train and test data with the same scaler.
@@ -47,3 +47,28 @@ class SvmHTdata(SvmClassifier):
         self.greedy_max_features = -1
         self.reverse_greedy_min_features = -1
 
+    def save_params(self):
+        # save model settings
+        if self.save_info:
+            # create save directory
+            if self.sp is None:
+                raise ValueError('save directory not specified.')
+            else:
+                if not os.path.exists(self.sp):
+                    os.makedirs(self.sp)
+
+            # Save pickle file with dictionary of input parameters
+            params_dict = {key: value for key, value in SvmHTdata.__dict__.items() if  # todo ez nem mukodik megfeleloen
+                           not key.startswith('__') and not callable(key)}
+
+            # save as .pkl
+            with open(os.path.join(self.sp, 'param_file.pkl'), 'wb') as f:
+                pickle.dump(params_dict, f)
+
+            # save as .txt
+            with open(os.path.join(self.sp, 'param_file.txt'), 'w') as f:
+                f.write(str(params_dict))
+
+
+if __name__ == '__main__':
+    SvmHTdata().run()

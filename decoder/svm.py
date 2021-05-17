@@ -1,5 +1,8 @@
+from base import Ecog
+
 from utils import *
 import os
+import h5py
 
 import numpy as np
 
@@ -137,7 +140,7 @@ def run(all_data, modelSettings, featureSettings):
 """
 
 
-class SvmClassifier(object):
+class SvmClassifier(Ecog):
     """
     docstring
     """
@@ -155,12 +158,53 @@ class SvmClassifier(object):
     # to collect results
     results = {}
 
-    def __init__(self):
+    def __init__(self, trial_pairs=None, label_pairs=None, ranges=None, same_scaler=False,
+                 do_correlation_analysis=False,
+                 correlation_pairs=None, multiple_rest=False, corr_threshold=None, scaler=None, clf=None,
+                 evaluation=None, cv=None,
+                 test_size=None, model_types=None, greedy_max_features=None, reverse_greedy_min_features=None, *args,
+                 **kwargs):
+        super(SvmClassifier, self).__init__(*args, **kwargs)
+
         self.px = None
         self.py = None
         self.px_test = None
         self.py_test = None
         self.patient_id = None
+
+        '''# load settings
+        root = os.path.abspath(os.path.dirname(__file__))
+        lp = os.path.join(root, '..', 'data', 'preprocessed_data', 'HTNet_data_preprocesed.hdf5')
+        self.preprocessed_data = h5py.File(lp, 'r')
+
+        # save settings
+        # self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data')
+        self.sp = os.path.join(root, '..', 'trained_models', 'HTNet_data', 'dell')'''
+        '''self.save_model = False
+        self.save_info = True  # if True, results not only displayed in the terminal but also saved.'''
+
+        # feature engineering settings
+        self.trial_pairs = trial_pairs  # set groups to classify between hand v. rest, tongue v. rest, hand v. tongue)
+        self.label_pairs = label_pairs
+        self.ranges = ranges
+        # , range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
+        self.same_scaler = same_scaler
+        # True: fit scaler to train data, scales train and test data with the same scaler.
+        # False: fit scaler to train data and test data, scales with the corresponding scaler
+        self.do_correlation_analysis = do_correlation_analysis
+        self.correlation_pairs = correlation_pairs
+        self.multiple_rest = multiple_rest
+        self.corr_threshold = corr_threshold
+
+        # model settings
+        self.scaler = scaler
+        self.clf = clf
+        self.evaluation = evaluation  # 'simple_split' or 'cross_val'
+        self.cv = cv
+        self.test_size = test_size
+        self.model_types = model_types
+        self.greedy_max_features = greedy_max_features
+        self.reverse_greedy_min_features = reverse_greedy_min_features
 
     def standardize_feature_vectors(self, same_scaler=True):
         # reshape(flatten) training data
@@ -294,7 +338,7 @@ class SvmClassifier(object):
 
         # build model from best 1,2,3...N channels and add rank to list
         for i, feature in enumerate(sorted(feature_dict, key=lambda j: j['accuracy'], reverse=True)):
-            progress_bar('creating models', i, num_ch*num_ranges)
+            progress_bar('creating models', i, num_ch * num_ranges)
             feature['rank'] = i  # add rank key to dict for further usage
 
             # concatenate  first N features
@@ -332,7 +376,7 @@ class SvmClassifier(object):
             plt.grid()
             plt.legend()
             plt.title(self.id)
-            #plt.show()
+            # plt.show()
 
             # save fig
             filename = self.id + '_Nbest.png'
@@ -356,16 +400,16 @@ class SvmClassifier(object):
         # define frequently used parameters
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        N = num_ranges*num_ch
+        N = num_ranges * num_ch
 
-        res = [] # stores accuracy of feature vector of 1,2,...,N features
-        Nbest = [] # N channels ordered by accuracy
+        res = []  # stores accuracy of feature vector of 1,2,...,N features
+        Nbest = []  # N channels ordered by accuracy
 
         # create feaurevectors of 1 vector, 2 vectors, 3 vectors, ..., N vectors
         for n in range(N):
-            max_acc = 0 # maximum accuracy achieved (init from 0)
-            max_acc_channel = -1 # maximum accuracy achieved in this channel (init from -1)
-            max_acc_range = -1 # maximum accuracy achieved in this range (init from -1)
+            max_acc = 0  # maximum accuracy achieved (init from 0)
+            max_acc_channel = -1  # maximum accuracy achieved in this channel (init from -1)
+            max_acc_range = -1  # maximum accuracy achieved in this range (init from -1)
 
             # go through each individual feature accuracies
             for ch in range(num_ch):
@@ -378,36 +422,36 @@ class SvmClassifier(object):
 
             # append n-th best feature and its parameters
             Nbest.append((max_acc_range, max_acc_channel))
-            accuracy[max_acc_range, max_acc_channel] = -1 # to not use this feature again
+            accuracy[max_acc_range, max_acc_channel] = -1  # to not use this feature again
 
             # create the n-th featurevector that consists of best n features
             for i, nbest in enumerate(Nbest):
                 freq = nbest[0]
                 ch = nbest[1]
                 if i == 0:
-                    px_temp = self.px[freq, ch, :].reshape(-1,1)
+                    px_temp = self.px[freq, ch, :].reshape(-1, 1)
                 else:
-                    px_temp = np.concatenate((self.px[freq, ch, :].reshape(-1,1), px_temp), axis=1)
+                    px_temp = np.concatenate((self.px[freq, ch, :].reshape(-1, 1), px_temp), axis=1)
 
             # SVM on featurevector
             if self.evaluation == 'cross_val':
                 scores = cross_val_score(self.clf, px_temp, self.py, cv=self.cv)
                 res.append(np.mean(scores))
             elif self.evaluation == 'simple_split':
-                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py, 
-                test_size=self.test_size, shuffle=False)
+                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py,
+                                                                    test_size=self.test_size, shuffle=False)
                 clf = self.clf.fit(X_train, y_train)
                 score = clf.score(X_test, y_test)
                 res.append(score)
 
         if self.id not in self.results:
-            self.results[self.id] = {'single':[], 'baseline':[],'n_best':[], 'greedy':[]}
+            self.results[self.id] = {'single': [], 'baseline': [], 'n_best': [], 'greedy': []}
         self.results['n_best'].append(res)
 
     def greedy(self):
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        freq_range = np.arange(num_ranges) # to use all ranges, i.e to only select features
+        freq_range = np.arange(num_ranges)  # to use all ranges, i.e to only select features
 
         # these two variables store selected feature set and accuracy in each iteration
         best_features_in_trial = {'freq_range': [], 'channel': [], 'result': [], 'px': []}
@@ -476,7 +520,8 @@ class SvmClassifier(object):
         SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
                                                     best_features_in_trial_test['result'],
                                                     best_features_in_trial['channel'],
-                                                    best_features_in_trial['freq_range']]  #TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
+                                                    best_features_in_trial[
+                                                        'freq_range']]  # TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
 
         # save the model and selected parameters to disk
         if self.save_model:
@@ -585,17 +630,16 @@ class SvmClassifier(object):
 
     def run(self):
         # get data and labels
-        train_x = self.data['train_x']
-        train_y = self.data['train_y']
-        test_x = self.data['test_x']
-        test_y = self.data['test_y']
+        train_x = self.preprocessed_data['train_x']
+        train_y = self.preprocessed_data['train_y']
+        test_x = self.preprocessed_data['test_x']
+        test_y = self.preprocessed_data['test_y']
 
         # set model settings as class variables
-        #self.set_class_vars(modelSettings)
+        # self.set_class_vars(modelSettings)
 
         # calculate classification accuracy for each subject
-        for i, name in enumerate(list(train_x.keys())):
-            # if not name == 'EC02':continue
+        for i, name in enumerate(self.subject_ids):
             print('####  subject: ', name, '####  \n')
             # get train/test data
             # train
@@ -637,7 +681,7 @@ class SvmClassifier(object):
                 py_test = py_dict_test[j]
 
                 # init class
-                #my_model = SvmClassifier(px=px, py=py, patient_id=name, px_test=px_test, py_test=py_test)
+                # my_model = SvmClassifier(px=px, py=py, patient_id=name, px_test=px_test, py_test=py_test)
                 self.px = px
                 self.py = py
                 self.id = name
@@ -781,43 +825,3 @@ class SvmClassifier(object):
         print(table_mean)
 
         return tables_all, table_mean
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -8,7 +8,7 @@ class Bci3Preprocessor(Preprocessor):
     Preprocessor.fs = 1000 # sampling rate
     Preprocessor.line_freq = 60 # line freq = 60 Hz
     #Preprocessor.PSD_time_range = (1000,-500) # set time range of trials to use in a tuple of (first data, last data), eg (1000,-500) ignores first 1000 and last 500 datapoints. Default: PSD_time_range=(0,-1) to use whole range
-    Preprocessor.PSD_freq_range = (0,200) # range of Power Spectrum, min and max freq in a tuple eg.(0,200) gives power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200). NOTE_: max_freq not included!
+    Preprocessor.freq_range = (0, 200) # range of Power Spectrum, min and max freq in a tuple eg.(0,200) gives power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200). NOTE_: max_freq not included!
 
     def __init__(self, *args, **kwargs):
         super(Bci3Preprocessor, self).__init__(*args, **kwargs)

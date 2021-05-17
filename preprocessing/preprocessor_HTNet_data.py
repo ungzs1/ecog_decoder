@@ -83,39 +83,6 @@ class HtnetPreprocessor(Preprocessor):
         X_test_all.append(X_test)
         y_test_all.append(y_test)'''
 
-    def load_data_and_labels(self, filename):
-        # should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
-        raise NotImplementedError
-
-        '''# should return a pair of numpy arrays of dimensions ( [trials, channels, timestep], [trials] )
-
-        patient = filename[-17:-13]
-        ecog_lp = filename[:-17]
-
-        # get number of channels
-        ep_data_in = xr.open_dataset(filename)
-        n_chans_all = ep_data_in['channels'].shape[0]
-        test_day = 'last'
-        tlim = [-1, 1]
-
-        # load data
-        X, y, X_test, y_test, sbj_order, sbj_order_test = load_data(patient, ecog_lp, n_chans_all=n_chans_all,
-                                                                    test_day=test_day, tlim=tlim)
-        X[np.isnan(X)] = 0  # set all NaN's to 0
-
-        data = np.concatenate((X, X_test), axis=0)
-        stim = np.concatenate((y, y_test), axis=0)
-
-        return data, stim'''
-
-    def train_files_from_dir(self):
-        # return all the valid train files in a list
-        raise NotImplementedError
-
-    def test_files_from_dir(self):
-        # return all the valid test files in a list
-        raise NotImplementedError
-
 
 if __name__ == '__main__':
     HtnetPreprocessor().run()
