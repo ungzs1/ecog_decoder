@@ -51,7 +51,7 @@ def run(all_data, modelSettings, featureSettings):
 
     # calculate classification accuracy for each subject
     for i, name in enumerate(list(train_x.keys())):
-        if not name == 'EC02':continue
+        if not name == 'EC02': continue
         print('####  subject: ', name, '####  \n')
         # get train/test data
         # train
@@ -485,6 +485,7 @@ class SvmClassifier(object):
         # add result to global class variable
         if self.id not in SvmClassifier.results:
             SvmClassifier.results[self.id] = {}
+
         SvmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0],
                                                     best_features_in_trial_test['result'][0]]
         SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
@@ -628,18 +629,26 @@ class SvmClassifier(object):
             test_row = ['test']
             for trial in result.keys():
                 if trial == 'greedy':
-                    train_row.append(round(result[trial][0][-1], 2))
-                    test_row.append(round(result[trial][1][-1], 2))
-                    train_all.append(round(result[trial][0][-1], 2))
-                    test_all.append(round(result[trial][1][-1], 2))
+                    res_train = round(result[trial][0][-1], 2)
+                    res_test = round(result[trial][1][-1], 2)
+
+                    train_row.append(res_train)
+                    test_row.append(res_test)
+                    train_all.append(res_train)
+                    test_all.append(res_test)
+
                     headers.append(trial)
-                if trial == 'Nbest':
+                elif trial == 'Nbest':
                     continue  # TODO megirni ezt
                 else:
-                    train_row.append(round(result[trial][0], 2))
-                    test_row.append(round(result[trial][1], 2))
-                    train_all.append(round(result[trial][0], 2))
-                    test_all.append(round(result[trial][1], 2))
+                    res_train = round(result[trial][0], 2)
+                    res_test = round(result[trial][1], 2)
+
+                    train_row.append(res_train)
+                    test_row.append(res_test)
+                    train_all.append(res_train)
+                    test_all.append(res_test)
+
                     headers.append(trial)
 
             table = tabulate([train_row, test_row], headers=headers)

@@ -1,14 +1,10 @@
 import os
-import sys
 
-import glob
 import numpy as np
 import xmltodict
 import h5py
 
 from scipy.signal import butter, lfilter, iirnotch, filtfilt, welch
-from sklearn.model_selection import train_test_split
-import matplotlib.pyplot as plt
 
 
 def butter_bandpass(lowcut, highcut, fs, order=5, btype="band"):
@@ -61,7 +57,7 @@ def get_spectra(x, fs, freq_range):
     for each trial
     """
 
-    noverlap = np.floor(fs * 0.1);
+    noverlap = np.floor(fs * 0.1)
     nperseg = np.floor(fs * 0.25)  # set window size and offset for PSD
     all_psd = []  # PSD for all trials and channels
 
@@ -70,7 +66,8 @@ def get_spectra(x, fs, freq_range):
         # get Power Spectrum Density with signal.welch
         for ch in range(x.shape[1]):  # loop through all channels
             [f, temp_psd] = welch(curr_data[ch, :], nfft=fs, fs=fs, noverlap=noverlap, nperseg=nperseg)
-            temp_psd = temp_psd[np.where((freq_range[0] <= f) & (f <= freq_range[1]))]  # to get the desired freq range only
+            temp_psd = temp_psd[
+                np.where((freq_range[0] <= f) & (f <= freq_range[1]))]  # to get the desired freq range only
             block_psd.append(temp_psd)
 
         block_psd = np.asarray(block_psd)
@@ -98,45 +95,37 @@ def config_post(path, key, value):
 
 
 class Preprocessor(object):
-    fs = -1  # sampling rate
-    line_freq = -1  # line freq = 60 Hz
-    time_range = (0, -1)  # set time range of trials to use in a tuple of (first data, last data),
-    # eg (1000,-500) ignores first 1000 and last 500 data points. Default: PSD_time_range=(0,-1) to use whole range
-    freq_range = (0, 200)  # range of Power Spectrum, min and max freq in a tuple eg.(0,200)
-    # gives power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200)
-    subject_ids = []  # store subject ids to ease their access
+    def __init__(self, config_file="", config=None,
+                 time_range=(0, -1), freq_range=(0, 200), fs=-1, line_freq=-1, subject_ids=None):
+        if config is None:
+            config = {}
 
-    def __init__(self, config_file="", config={}):
         if config_file != "" and os.path.exists(config_file):
             with open(config_file) as fd:
                 try:
                     self.config = xmltodict.parse(fd.read(), dict_constructor=dict, postprocessor=config_post)
                     self.config = self.config["root"]
                     self.config.update(config)
-
                 except Exception:
                     self.config = config
         else:
             self.config = config
+
         self.config.setdefault("save_dir", "")
         self.config.setdefault("save_name", "")
         self.config.setdefault("default_config_name", "config.xml")
         self.config.setdefault("create_validation_bool", True)
         self.config.setdefault("data_source", "")
 
-    def load_data_and_labels(self, filename):
-        # should return a pair of numpy arrays of dimensions ( [timestep, channels], [timestep, label] )
-        raise NotImplementedError
+        self.time_range = time_range  # set time range of trials to use in a tuple of (first data, last data),
+        # eg (1000,-500) ignores first 1000 and last 500 data points. Default: PSD_time_range=(0,-1) to use whole range
+        self.freq_range = freq_range  # range of Power Spectrum, min and max freq in a tuple eg.(0,200)
+        self.fs = fs  # sampling rate
+        self.line_freq = line_freq  # line freq = 60 Hz
 
-    def get_train_test_data(self, *args):
-        raise NotImplementedError
+        self.subject_ids = subject_ids  # store subject ids to ease their access
 
-    def train_files_from_dir(self):
-        # return all the valid train files in a list
-        raise NotImplementedError
-
-    def test_files_from_dir(self):
-        # return all the valid test files in a list
+    def get_train_test_data(self, subject):
         raise NotImplementedError
 
     def run(self):
@@ -146,8 +135,8 @@ class Preprocessor(object):
         test_y = []
 
         print('reading and preprocessing data...')
-        for i, subject in enumerate(Preprocessor.subject_ids):
-            print("\t{}/{}:\tpatient '{}'".format(i+1, len(Preprocessor.subject_ids), subject))
+        for i, subject in enumerate(self.subject_ids):
+            print("\t{}/{}:\tpatient '{}'".format(i + 1, len(self.subject_ids), subject))
 
             # get train and test data for current subject
             X_train, y_train, X_test, y_test = self.get_train_test_data(subject)
@@ -162,30 +151,16 @@ class Preprocessor(object):
             test_x.append(px)
             test_y.append(py)
 
-        '''
-        for ftrain in self.train_files_from_dir():
-            print(ftrain) # to see progress
-            x,y = self.load_data_and_labels(ftrain)
-            px,py = self.preprocess_with_label(x,y)
-            train_x.append(px)
-            train_y.append(py)
+            # Sanity check
 
-        for ftest in self.test_files_from_dir():
-            x,y = self.load_data_and_labels(ftest)
-            px,py = self.preprocess_with_label(x,y)
-            test_x.append(px)
-            test_y.append(py)
-        '''
-        # Sanity check
+            if len(train_x) != len(train_y):
+                raise ValueError("Train dataset first dimension mismatch: ", len(train_x), " and ", len(train_y))
 
-        if len(train_x) != len(train_y):
-            raise ValueError("Train dataset first dimension mismatch: ", len(train_x), " and ", len(train_y))
+            if len(test_x) != len(test_y):
+                raise ValueError("Test dataset first dimension mismatch: ", len(test_x), " and ", len(test_y))
 
-        if len(test_x) != len(test_y):
-            raise ValueError("Test dataset first dimension mismatch: ", len(train_x), " and ", len(train_y))
-
-        if self.config["create_validation_bool"]:
-            train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)
+        '''if self.config["create_validation_bool"]:
+            train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)'''
 
         # Create datasets
         print('saving datasets...')
@@ -199,14 +174,18 @@ class Preprocessor(object):
             grp_test_x = hf.create_group("test_x")
             grp_test_y = hf.create_group("test_y")
 
-            for i, px in enumerate(train_x): grp_train_x[self.subject_ids[i]] = px
-            for i, py in enumerate(train_y): grp_train_y[self.subject_ids[i]] = py
-            for i, px in enumerate(test_x): grp_test_x[self.subject_ids[i]] = px
-            for i, py in enumerate(test_y): grp_test_y[self.subject_ids[i]] = py
+            for i, px in enumerate(train_x):
+                grp_train_x[self.subject_ids[i]] = px
+            for i, py in enumerate(train_y):
+                grp_train_y[self.subject_ids[i]] = py
+            for i, px in enumerate(test_x):
+                grp_test_x[self.subject_ids[i]] = px
+            for i, py in enumerate(test_y):
+                grp_test_y[self.subject_ids[i]] = py
 
-            if self.config["create_validation_bool"]:
+            '''if self.config["create_validation_bool"]:
                 hf.create_dataset("val_x", data=val_x)
-                hf.create_dataset("val_y", data=val_y)
+                hf.create_dataset("val_y", data=val_y)'''
 
         with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
             self.config["time_range"] = str(self.time_range)
