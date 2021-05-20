@@ -149,7 +149,7 @@ def run(all_data, modelSettings, featureSettings):
 """
 
 
-class SvmClassifier:
+class SvmDecoder:
     """
     docstring
     """
@@ -168,7 +168,7 @@ class SvmClassifier:
     results = {}
 
     def __init__(self, preprocessed_data=None, subject_ids=None, sp=None, save_model=None, save_info=None,
-                 trial_pairs=None, label_pairs=None, ranges=None, same_scaler=False, do_correlation_analysis=False,
+                 trial_pairs=None, ranges=None, same_scaler=False, do_correlation_analysis=False,
                  correlation_pairs=None, multiple_rest=False, corr_threshold=None,
                  scaler=None, clf=None, evaluation=None, cv=None, test_size=None, model_types=None,
                  greedy_max_features=None, reverse_greedy_min_features=None, *args, **kwargs):  # todo default erteketk beallitasa ahol kell
@@ -194,7 +194,6 @@ class SvmClassifier:
 
         # feature engineering settings
         self.trial_pairs = trial_pairs  # set groups to classify between hand v. rest, tongue v. rest, hand v. tongue)
-        #self.label_pairs = label_pairs
         self.ranges = ranges
         # , range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
         self.same_scaler = same_scaler
@@ -222,21 +221,21 @@ class SvmClassifier:
         # the underlying C implementation."
         px_temp = np.transpose(self.px.reshape(-1, self.px.shape[-1]))
 
-        # fit scaler to train data
-        scaler = self.scaler.fit(px_temp)
-
-        # scale training data
-        self.px = np.transpose(scaler.transform(px_temp)).reshape(self.px.shape)
+        # scale train data
+        scaler_train = self.scaler.fit(px_temp)  # fit scaler to train data
+        self.px = np.transpose(scaler_train.transform(px_temp)).reshape(self.px.shape)  # scale data with fitted scaler
 
         # scale test data (with the same scaler!!)
         if not self.px_test == []:
             self.px_test = np.asarray(self.px_test, dtype='double')
             px_test_temp = np.transpose(self.px_test.reshape(-1, self.px_test.shape[-1]))
-            if same_scaler:
-                self.px_test = np.transpose(scaler.transform(px_test_temp)).reshape(self.px_test.shape)
-            else:
+            if same_scaler:  # scale test data with the same scaler as train data
+                self.px_test = np.transpose(scaler_train.transform(px_test_temp)).reshape(self.px_test.shape)
+            else:  # scale data with scaler fitted to it
                 scaler_test = self.scaler.fit(px_test_temp)
                 self.px_test = np.transpose(scaler_test.transform(px_test_temp)).reshape(self.px_test.shape)
+        else:
+            print('test set not scaled because not defined')
 
     def score_model(self, px, py):
         # build model
@@ -297,13 +296,14 @@ class SvmClassifier:
         # build model on (final) px_temp
         model = self.clf.fit(px_temp, self.py)
 
-        # test accuracy
+        # evaluate model on test set
         res_test = model.score(px_temp_test, self.py_test)
 
         # add result to global class variable
-        if self.id not in SvmClassifier.results:
-            SvmClassifier.results[self.id] = {}
-        SvmClassifier.results[self.id]['baseline'] = [res, res_test]
+        if self.id not in SvmDecoder.results:
+            SvmDecoder.results[self.id] = {}
+
+        SvmDecoder.results[self.id]['baseline'] = [res, res_test]
 
         # save the model to disk
         if self.save_model:
@@ -393,12 +393,12 @@ class SvmClassifier:
             plt.savefig(my_path)
 
         # add result to global class variable
-        if self.id not in SvmClassifier.results:
-            SvmClassifier.results[self.id] = {}
-        SvmClassifier.results[self.id]['Nbest'] = [{key: feature[key] for key in ['rank', 'accuracy', 'n_best_acc',
+        if self.id not in SvmDecoder.results:
+            SvmDecoder.results[self.id] = {}
+        SvmDecoder.results[self.id]['Nbest'] = [{key: feature[key] for key in ['rank', 'accuracy', 'n_best_acc',
                                                                                   'n_best_acc_test', 'channel',
                                                                                   'freq_range']} for feature in
-                                                   sorted(feature_dict, key=lambda j: j['rank'])]
+                                                sorted(feature_dict, key=lambda j: j['rank'])]
 
         # save the model and selected parameters to disk
 
@@ -522,15 +522,15 @@ class SvmClassifier:
                       'test accuracy: ', round(res_test, 2))
 
         # add result to global class variable
-        if self.id not in SvmClassifier.results:
-            SvmClassifier.results[self.id] = {}
+        if self.id not in SvmDecoder.results:
+            SvmDecoder.results[self.id] = {}
 
-        SvmClassifier.results[self.id]['single'] = [best_features_in_trial['result'][0],
-                                                    best_features_in_trial_test['result'][0]]
-        SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
-                                                    best_features_in_trial_test['result'],
-                                                    best_features_in_trial['channel'],
-                                                    best_features_in_trial[
+        SvmDecoder.results[self.id]['single'] = [best_features_in_trial['result'][0],
+                                                 best_features_in_trial_test['result'][0]]
+        SvmDecoder.results[self.id]['greedy'] = [best_features_in_trial['result'],
+                                                 best_features_in_trial_test['result'],
+                                                 best_features_in_trial['channel'],
+                                                 best_features_in_trial[
                                                         'freq_range']]  # TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
 
         # save the model and selected parameters to disk
@@ -653,7 +653,7 @@ class SvmClassifier:
             # get train/test data
             # train
             px_base = np.asarray(train_x[name])
-            px_base = np.transpose(px_base, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
+            px_base = np.transpose(px_base, axes=[2, 1, 0])  # reorder to (freq, channels, trials)
             py_base = np.asarray(train_y[name])
             # test
             px_base_test = np.asarray(test_x[name])
@@ -662,13 +662,13 @@ class SvmClassifier:
 
             # reshape feature vectors
             trial_pairs = self.trial_pairs
-            # train
+
             px_dict, py_dict = featurevectors_by_trial(px_base, py_base, trial_types=trial_pairs['label_pairs'],
                                                        do_correlation_analysis=self.do_correlation_analysis,
                                                        correlation_pairs=self.correlation_pairs,
                                                        ranges=self.ranges,
                                                        corr_threshold=self.corr_threshold)
-            # test
+
             px_dict_test, py_dict_test = featurevectors_by_trial(px_base_test, py_base_test,
                                                                  trial_types=trial_pairs['label_pairs'],
                                                                  do_correlation_analysis=self.do_correlation_analysis,
@@ -676,7 +676,7 @@ class SvmClassifier:
                                                                  ranges=self.ranges,
                                                                  corr_threshold=self.corr_threshold)
 
-            # loop through each featurevector for given patient
+            # loop through each featurevector
             for j, featurevector in enumerate(px_dict):
                 # handle exception: when 0 valid channels or freq ranges found based on correlation values
                 '''if featurevector.shape[1] == 0:
@@ -684,18 +684,19 @@ class SvmClassifier:
                     continue'''
 
                 # assign class variables
-                px = featurevector
-                py = py_dict[j]
-                px_test = px_dict_test[j]
-                py_test = py_dict_test[j]
+                self.px = featurevector
+                self.py = py_dict[j]
+                self.px_test = px_dict_test[j]
+                self.py_test = py_dict_test[j]
+                self.id = name
 
                 # init class
                 # my_model = SvmClassifier(px=px, py=py, patient_id=name, px_test=px_test, py_test=py_test)
-                self.px = px
+                '''self.px = px
                 self.py = py
                 self.id = name
                 self.px_test = px_test
-                self.py_test = py_test
+                self.py_test = py_test'''
                 '''if isinstance(px_test, np.ndarray):
                             self.px_test = px_test
                         else:
@@ -744,11 +745,11 @@ class SvmClassifier:
 
             # save accuracies as .pkl
             with open(os.path.join(self.sp, 'accs_all.pkl'), 'wb') as f:
-                pickle.dump(SvmClassifier.results, f)
+                pickle.dump(SvmDecoder.results, f)
 
             # save accuracies as .txt
             with open(os.path.join(self.sp, 'accs_all.txt'), 'w') as f:
-                f.write(str(SvmClassifier.results))
+                f.write(str(SvmDecoder.results))
 
             # save summary as .txt
             with open(os.path.join(self.sp, 'accs_summary.txt'), 'w') as f:

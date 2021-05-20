@@ -225,11 +225,9 @@ class Preprocessor(object):
         t_end = self.time_range[1]
         x = x[:, :, t_start:t_end]
 
-        # Calculate spectra from 0 to 200 Hz
+        # Calculate power spectral density from 0 to 200 Hz
         px = get_spectra(x, self.fs, self.freq_range)
         py = y  # nothing to change
-
-        ## 
 
         px = np.asarray(px)
         py = np.asarray(py)
