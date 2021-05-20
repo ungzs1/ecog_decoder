@@ -1,6 +1,9 @@
-from feature_transformation import *
-import h5py
+try:
+    from .feature_transformation import *
+except ImportError:
+    from feature_transformation import *
 
+import h5py
 import os
 import numpy as np
 

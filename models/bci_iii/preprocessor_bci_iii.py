@@ -1,7 +1,11 @@
+# ***********************
+# NEEDS TO BE FIXED !!!!!
+# ***********************
+
 try:
-    from .preprocessor_base import *
+    from ecog.decoder.preprocessor import *
 except ImportError:
-    from preprocessor_base import *
+    from ecog.decoder.preprocessor import *
 
 class Bci3Preprocessor(Preprocessor):
 
@@ -13,7 +17,8 @@ class Bci3Preprocessor(Preprocessor):
     def __init__(self, *args, **kwargs):
         super(Bci3Preprocessor, self).__init__(*args, **kwargs)
         self.config["data_source"] = "BCI Comp III"
-        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), "../data/preprocessed_data/")
+        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                                               "../../data/preprocessed_data/")
         self.config["save_name"] = "bci_comp_iii_preprocesed.hdf5"
         self.config["default_config_name"] = 'BCI_COMP_III_CONFIG'
         self.config["create_validation_bool"] = False
@@ -33,8 +38,8 @@ class Bci3Preprocessor(Preprocessor):
         # return all the valid train files in a list
     
         my_path = os.path.abspath(os.path.dirname(__file__))
-        path_to_data = os.path.join(my_path, "../data/raw_data/bci_comp_iii/Competition_train_cnt.npy")
-        path_to_label = os.path.join(my_path, "../data/raw_data/bci_comp_iii/Competition_train_lab.npy")
+        path_to_data = os.path.join(my_path, "../../data/raw_data/bci_comp_iii/Competition_train_cnt.npy")
+        path_to_label = os.path.join(my_path, "../../data/raw_data/bci_comp_iii/Competition_train_lab.npy")
 
         file_list = [(path_to_data, path_to_label)]
 

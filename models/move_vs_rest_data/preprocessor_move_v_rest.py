@@ -1,7 +1,4 @@
-try:
-    from .preprocessor_base import *
-except ImportError:
-    from preprocessor_base import *
+from ecog.decoder.preprocessor import *
 
 import xarray as xr
 
@@ -11,11 +8,11 @@ class HtnetPreprocessor(Preprocessor):
         super(HtnetPreprocessor, self).__init__(*args, **kwargs)
         # define path to folder
         my_path = os.path.abspath(os.path.dirname(__file__))
-        path_to_data = os.path.join(my_path, '..', 'data', 'raw_data', 'naturalistic_move_v_rest')
+        path_to_data = os.path.join(my_path, '..', '..', 'data', 'raw_data', 'naturalistic_move_v_rest')
         self.lp = os.path.join(path_to_data, 'ecog_dataset')  # data load path
 
         self.config["data_source"] = self.lp
-        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'data',
+        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'data',
                                                'preprocessed_data', 'HTNet_data')
         self.config["save_name"] = "HTNet_data.hdf5"
         self.config["default_config_name"] = "HTNet_CONFIG"

@@ -1,5 +1,4 @@
-from svm_base import *
-
+from ecog.decoder.svm_classifier import *
 
 class SvmHtnetData(SvmDecoder):
     def __init__(self):
@@ -8,11 +7,11 @@ class SvmHtnetData(SvmDecoder):
         # *** USER PARAMETERS ***
         # i/o settings
         root = os.path.abspath(os.path.dirname(__file__))
-        lp = os.path.join(root, '..', 'data', 'preprocessed_data', 'HTNet_data_preprocesed.hdf5')
+        lp = os.path.join(root, '..', '..', 'data', 'preprocessed_data', 'HTNet_data_preprocesed.hdf5')
         self.preprocessed_data = h5py.File(lp, 'r')
         self.subject_ids = ['EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08', 'EC09', 'EC10',
                             'EC11', 'EC12']
-        self.sp = os.path.join(root, '..', 'trained_models', 'svm', 'HTNet_data', 'del')
+        self.sp = os.path.join(root, '..', '..', 'trained_models', 'svm', 'HTNet_data', 'del')
         self.save_model = False
         self.save_info = True  # if True, results not only displayed in the terminal but also saved.
 

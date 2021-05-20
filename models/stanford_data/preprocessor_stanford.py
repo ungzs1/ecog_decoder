@@ -1,7 +1,4 @@
-try:
-    from .preprocessor_base import *
-except ImportError:
-    from preprocessor_base import *
+from ecog.decoder.preprocessor import *
 
 from scipy.io import loadmat
 from sklearn.model_selection import train_test_split
@@ -12,11 +9,11 @@ class StanfordPreprocessor(Preprocessor):
         super(StanfordPreprocessor, self).__init__(*args, **kwargs)
         # define path to folder
         my_path = os.path.abspath(os.path.dirname(__file__))
-        path_to_data = os.path.join(my_path, '..', 'data', 'raw_data', 'stanford_motorbasic')
+        path_to_data = os.path.join(my_path, '..', '..', 'data', 'raw_data', 'stanford_motorbasic')
         self.lp = path_to_data  # data load path
         
         self.config["data_source"] = self.lp
-        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', 'data', 
+        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'data',
                                                'preprocessed_data', 'stanford_motorbasic')
         self.config["save_name"] = "stanford_mot.hdf5"
         self.config["default_config_name"] = 'stanford_mot_CONFIG'
