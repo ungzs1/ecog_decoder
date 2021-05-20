@@ -23,8 +23,8 @@ To update the environment file, you can export it with the command:
 
  - [data](#data)
 	 - [raw_data](#raw_data)
-	 - [preprocessed_data](#prepcessed data)
- - [preprocessing](#preprocessing)
+	 - [preprocessed_data](#preprocessed_data)
+ - [decoder](#decoder)
  - [models](#models)
  - [logs](#logs)
  - [trained_models](#trained_models)
@@ -35,26 +35,33 @@ To update the environment file, you can export it with the command:
  <a name="raw_data"> </a>
  #### raw_data
  The storage of the downloaded raw data is here, in a folder structure specific to the database
- <a name="preprocessing"> </a>
- #### preprocessing
- All of the different loading models are stored here and the main preprocessing methods also
+  <a name="preprocessed_data"> </a>
+ #### raw_data
+ The storage of the preprocessed datasets is here.
+ 
+ <a name="decoder"> </a>
+ #### decoder
+The main preprocessing and modeling methods are stored here.
 
  <a name="models"> </a>
  #### models
  The storage of multiple main models 
  <a name="logs"> </a>
+ 
  #### logs
  The logging goes here, but intended for offline use only 
  <a name="trained_models"> </a>
+ 
  #### trained_models
  The different trained models are stored here. The naming should be consistent with the ones in the Google Drive Excel File **models.xml**
 
+## GPU usage
 
 TensorFlow GPU support is needed to run HTNet code. Install instructions can be found in the [tensorflow website](https://www.tensorflow.org/install/gpu) or in [this blog](https://medium.com/analytics-vidhya/install-cuda-11-2-cudnn-8-1-0-and-python-3-9-on-rtx3090-for-deep-learning-fcf96c95f7a1).
 
-Tested build configurations:
+### Tested build configurations:
 
-Linux
+#### Linux
 
 | NVIDIA GPU Driver | CUDA toolkit | cuDNN SDK | Python | TensorFlow |
 | ------------- | ------------- | ------------- | ------------- | ------------- |
@@ -65,6 +72,6 @@ Use the above configurations to avoid library conflicts.
 
 Always check compatibility:
 
-- [CUDA toolkit](https://docs.nvidia.com/deploy/cuda-compatibility/index.html)
-- [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html)
-- [TF](https://www.tensorflow.org/install/source#gpu)
+- for [CUDA toolkit](https://docs.nvidia.com/deploy/cuda-compatibility/index.html)
+- for [cuDNN](https://docs.nvidia.com/deeplearning/cudnn/support-matrix/index.html)
+- for [TF](https://www.tensorflow.org/install/source#gpu)
