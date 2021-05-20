@@ -1,6 +1,7 @@
 from feature_transformation import *
-import os
+import h5py
 
+import os
 import numpy as np
 
 from sklearn import svm
@@ -14,14 +15,16 @@ import matplotlib.pyplot as plt
 
 
 def progress_bar(message, current, total, bar_length=20):
-    percent = float(current) * 100 / (total-1)
-    arrow = '#' * int(percent/100 * bar_length - 1) + '#'
+    percent = float(current) * 100 / (total - 1)
+    arrow = '#' * int(percent / 100 * bar_length - 1) + '#'
     spaces = '.' * (bar_length - len(arrow))
-    if not current == total-1:
+    if not current == total - 1:
         print(message, ': [%s%s] %d %%' % (arrow, spaces, percent), end='\r')
     else:
         print(message, ': [%s%s] %d %%' % (arrow, spaces, percent))
 
+
+"""
 def run(all_data, modelSettings, featureSettings):
     # save model settings
     if modelSettings['save_info']:
@@ -143,14 +146,15 @@ def run(all_data, modelSettings, featureSettings):
             f.write(table2)
 
     return results
+"""
 
 
-class SvmClassifier(object):
+class SvmClassifier:
     """
     docstring
     """
     # SVM parameters
-    scaler = StandardScaler()
+    '''scaler = StandardScaler()
     clf = svm.SVC()
     evaluation = 'cross_val'
     save_model = False
@@ -158,23 +162,58 @@ class SvmClassifier(object):
     cv = 5
     test_size = 0.2
     greedy_max_features = -1
-    r_greedy_min_features = -1
+    r_greedy_min_features = -1'''
 
     # to collect results
     results = {}
 
-    def __init__(self, patient_id, px, py, px_test=None, py_test=None):
-        self.px = px
-        self.py = py
-        if isinstance(px_test, np.ndarray):
-            self.px_test = px_test
+    def __init__(self, preprocessed_data=None, subject_ids=None, sp=None, save_model=None, save_info=None,
+                 trial_pairs=None, label_pairs=None, ranges=None, same_scaler=False, do_correlation_analysis=False,
+                 correlation_pairs=None, multiple_rest=False, corr_threshold=None,
+                 scaler=None, clf=None, evaluation=None, cv=None, test_size=None, model_types=None,
+                 greedy_max_features=None, reverse_greedy_min_features=None, *args, **kwargs):  # todo default erteketk beallitasa ahol kell
+
+        # parameters defined by the script
+        self.px = None
+        self.py = None
+        self.px_test = None
+        self.py_test = None
+        self.patient_id = None
+
+        # *** USER PARAMETERS ***
+        # i/o settings
+        self.root = os.path.abspath(os.path.dirname(__file__))
+        self.preprocessed_data = preprocessed_data
+        if subject_ids is not None:
+            self.subject_ids = subject_ids
         else:
-            self.px_test = []
-        if isinstance(px_test, np.ndarray):
-            self.py_test = py_test
-        else:
-            self.py_test = []
-        self.id = patient_id
+            self.subject_ids = []
+        self.sp = sp
+        self.save_model = save_model
+        self.save_info = save_info  # if True, results not only displayed in the terminal but also saved.
+
+        # feature engineering settings
+        self.trial_pairs = trial_pairs  # set groups to classify between hand v. rest, tongue v. rest, hand v. tongue)
+        #self.label_pairs = label_pairs
+        self.ranges = ranges
+        # , range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
+        self.same_scaler = same_scaler
+        # True: fit scaler to train data, scales train and test data with the same scaler.
+        # False: fit scaler to train data and test data, scales with the corresponding scaler
+        self.do_correlation_analysis = do_correlation_analysis
+        self.correlation_pairs = correlation_pairs
+        self.multiple_rest = multiple_rest
+        self.corr_threshold = corr_threshold
+
+        # model settings
+        self.scaler = scaler
+        self.clf = clf
+        self.evaluation = evaluation  # 'simple_split' or 'cross_val'
+        self.cv = cv
+        self.test_size = test_size
+        self.model_types = model_types
+        self.greedy_max_features = greedy_max_features
+        self.reverse_greedy_min_features = reverse_greedy_min_features
 
     def standardize_feature_vectors(self, same_scaler=True):
         # reshape(flatten) training data
@@ -308,7 +347,7 @@ class SvmClassifier(object):
 
         # build model from best 1,2,3...N channels and add rank to list
         for i, feature in enumerate(sorted(feature_dict, key=lambda j: j['accuracy'], reverse=True)):
-            progress_bar('creating models', i, num_ch*num_ranges)
+            progress_bar('creating models', i, num_ch * num_ranges)
             feature['rank'] = i  # add rank key to dict for further usage
 
             # concatenate  first N features
@@ -346,7 +385,7 @@ class SvmClassifier(object):
             plt.grid()
             plt.legend()
             plt.title(self.id)
-            #plt.show()
+            # plt.show()
 
             # save fig
             filename = self.id + '_Nbest.png'
@@ -370,16 +409,16 @@ class SvmClassifier(object):
         # define frequently used parameters
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        N = num_ranges*num_ch
+        N = num_ranges * num_ch
 
-        res = [] # stores accuracy of feature vector of 1,2,...,N features
-        Nbest = [] # N channels ordered by accuracy
+        res = []  # stores accuracy of feature vector of 1,2,...,N features
+        Nbest = []  # N channels ordered by accuracy
 
         # create feaurevectors of 1 vector, 2 vectors, 3 vectors, ..., N vectors
         for n in range(N):
-            max_acc = 0 # maximum accuracy achieved (init from 0)
-            max_acc_channel = -1 # maximum accuracy achieved in this channel (init from -1)
-            max_acc_range = -1 # maximum accuracy achieved in this range (init from -1)
+            max_acc = 0  # maximum accuracy achieved (init from 0)
+            max_acc_channel = -1  # maximum accuracy achieved in this channel (init from -1)
+            max_acc_range = -1  # maximum accuracy achieved in this range (init from -1)
 
             # go through each individual feature accuracies
             for ch in range(num_ch):
@@ -392,36 +431,36 @@ class SvmClassifier(object):
 
             # append n-th best feature and its parameters
             Nbest.append((max_acc_range, max_acc_channel))
-            accuracy[max_acc_range, max_acc_channel] = -1 # to not use this feature again
+            accuracy[max_acc_range, max_acc_channel] = -1  # to not use this feature again
 
             # create the n-th featurevector that consists of best n features
             for i, nbest in enumerate(Nbest):
                 freq = nbest[0]
                 ch = nbest[1]
                 if i == 0:
-                    px_temp = self.px[freq, ch, :].reshape(-1,1)
+                    px_temp = self.px[freq, ch, :].reshape(-1, 1)
                 else:
-                    px_temp = np.concatenate((self.px[freq, ch, :].reshape(-1,1), px_temp), axis=1)
+                    px_temp = np.concatenate((self.px[freq, ch, :].reshape(-1, 1), px_temp), axis=1)
 
             # SVM on featurevector
             if self.evaluation == 'cross_val':
                 scores = cross_val_score(self.clf, px_temp, self.py, cv=self.cv)
                 res.append(np.mean(scores))
             elif self.evaluation == 'simple_split':
-                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py, 
-                test_size=self.test_size, shuffle=False)
+                X_train, X_test, y_train, y_test = train_test_split(px_temp, self.py,
+                                                                    test_size=self.test_size, shuffle=False)
                 clf = self.clf.fit(X_train, y_train)
                 score = clf.score(X_test, y_test)
                 res.append(score)
 
         if self.id not in self.results:
-            self.results[self.id] = {'single':[], 'baseline':[],'n_best':[], 'greedy':[]}
+            self.results[self.id] = {'single': [], 'baseline': [], 'n_best': [], 'greedy': []}
         self.results['n_best'].append(res)
 
     def greedy(self):
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        freq_range = np.arange(num_ranges) # to use all ranges, i.e to only select features
+        freq_range = np.arange(num_ranges)  # to use all ranges, i.e to only select features
 
         # these two variables store selected feature set and accuracy in each iteration
         best_features_in_trial = {'freq_range': [], 'channel': [], 'result': [], 'px': []}
@@ -491,7 +530,8 @@ class SvmClassifier(object):
         SvmClassifier.results[self.id]['greedy'] = [best_features_in_trial['result'],
                                                     best_features_in_trial_test['result'],
                                                     best_features_in_trial['channel'],
-                                                    best_features_in_trial['freq_range']]  #TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
+                                                    best_features_in_trial[
+                                                        'freq_range']]  # TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
 
         # save the model and selected parameters to disk
         if self.save_model:
@@ -511,8 +551,8 @@ class SvmClassifier(object):
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
 
-    '''def r_greedy(self):
-        # from [freq, ch, trial] to [(freq x ch), trial]
+    def r_greedy(self):
+        '''# from [freq, ch, trial] to [(freq x ch), trial]
         px_return = np.transpose(self.px.reshape(-1, self.py.shape[0]))
         px_return_test = np.transpose(self.px_test.reshape(-1, self.py_test.shape[0]))
 
@@ -595,6 +635,130 @@ class SvmClassifier(object):
             with open(my_path, 'wb') as f:
                 pickle.dump(params, f)
     '''
+        raise NotImplementedError
+
+    def run(self):
+        # get data and labels
+        train_x = self.preprocessed_data['train_x']
+        train_y = self.preprocessed_data['train_y']
+        test_x = self.preprocessed_data['test_x']
+        test_y = self.preprocessed_data['test_y']
+
+        # set model settings as class variables
+        # self.set_class_vars(modelSettings)
+
+        # calculate classification accuracy for each subject
+        for i, name in enumerate(self.subject_ids):
+            print('####  subject: ', name, '####  \n')
+            # get train/test data
+            # train
+            px_base = np.asarray(train_x[name])
+            px_base = np.transpose(px_base, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
+            py_base = np.asarray(train_y[name])
+            # test
+            px_base_test = np.asarray(test_x[name])
+            px_base_test = np.transpose(px_base_test, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
+            py_base_test = np.asarray(test_y[name])
+
+            # reshape feature vectors
+            trial_pairs = self.trial_pairs
+            # train
+            px_dict, py_dict = featurevectors_by_trial(px_base, py_base, trial_types=trial_pairs['label_pairs'],
+                                                       do_correlation_analysis=self.do_correlation_analysis,
+                                                       correlation_pairs=self.correlation_pairs,
+                                                       ranges=self.ranges,
+                                                       corr_threshold=self.corr_threshold)
+            # test
+            px_dict_test, py_dict_test = featurevectors_by_trial(px_base_test, py_base_test,
+                                                                 trial_types=trial_pairs['label_pairs'],
+                                                                 do_correlation_analysis=self.do_correlation_analysis,
+                                                                 correlation_pairs=self.correlation_pairs,
+                                                                 ranges=self.ranges,
+                                                                 corr_threshold=self.corr_threshold)
+
+            # loop through each featurevector for given patient
+            for j, featurevector in enumerate(px_dict):
+                # handle exception: when 0 valid channels or freq ranges found based on correlation values
+                '''if featurevector.shape[1] == 0:
+                    for k in range(len(results)): results[k].append(-1)#?????????
+                    continue'''
+
+                # assign class variables
+                px = featurevector
+                py = py_dict[j]
+                px_test = px_dict_test[j]
+                py_test = py_dict_test[j]
+
+                # init class
+                # my_model = SvmClassifier(px=px, py=py, patient_id=name, px_test=px_test, py_test=py_test)
+                self.px = px
+                self.py = py
+                self.id = name
+                self.px_test = px_test
+                self.py_test = py_test
+                '''if isinstance(px_test, np.ndarray):
+                            self.px_test = px_test
+                        else:
+                            self.px_test = []
+                        if isinstance(px_test, np.ndarray):
+                            self.py_test = py_test
+                        else:
+                            self.py_test = []
+                        self.id = patient_id'''
+
+                # standardize data
+                self.standardize_feature_vectors(same_scaler=self.same_scaler)
+
+                # BUILD AND SAVE MODELS ###
+                for model_type in self.model_types:
+                    # SINGLE FEATURE strategy
+                    # my_model.single_feature()# this list stores accuracy of each feature for the given classification task
+                    if model_type == 'baseline':
+                        # BASELINE strategy
+                        print('**baseline')
+                        self.baseline()
+                    elif model_type == 'Nbest':
+                        # N-BEST strategy
+                        print('**N best')
+                        self.n_best(plot=True)
+                    elif model_type == 'greedy':
+                        # GREEDY strategy
+                        print('**greedy')
+                        self.greedy()
+                    elif model_type == 'rGreedy':
+                        # reverse GREEDY strategy
+                        print('**greedy REVERSO')
+                        self.r_greedy()
+
+        # print results as table
+        results = self.results
+        tables_all, table2 = self.print_results(results)  # todo ezt osszevonni
+
+        # save parameters and resulting accuracies
+        if self.save_info:
+            if not os.path.exists(self.sp):
+                os.makedirs(self.sp)
+
+            # save model parameters
+            # self.save_params()  # todo megirni hogy mentse ki a beallitott parametereket
+
+            # save accuracies as .pkl
+            with open(os.path.join(self.sp, 'accs_all.pkl'), 'wb') as f:
+                pickle.dump(SvmClassifier.results, f)
+
+            # save accuracies as .txt
+            with open(os.path.join(self.sp, 'accs_all.txt'), 'w') as f:
+                f.write(str(SvmClassifier.results))
+
+            # save summary as .txt
+            with open(os.path.join(self.sp, 'accs_summary.txt'), 'w') as f:
+                for result in tables_all:
+                    f.write(result['name'] + '\n')
+                    f.write(result['table'] + '\n\n')
+                f.write('mean\n')
+                f.write(table2)
+
+        return results
 
     @classmethod
     def set_class_vars(cls, modelSettings):
@@ -671,43 +835,3 @@ class SvmClassifier(object):
         print(table2)
 
         return tables_all, table2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
