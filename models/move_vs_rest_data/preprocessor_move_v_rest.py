@@ -1,3 +1,6 @@
+import sys, os
+sys.path.insert(0, os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', '..'))
+
 from ecog.decoder.preprocessor import *
 
 import xarray as xr
@@ -14,12 +17,17 @@ class HtnetPreprocessor(Preprocessor):
         self.config["data_source"] = self.lp
         self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'data',
                                                'preprocessed_data', 'HTNet_data')
-        self.config["save_name"] = "HTNet_data.hdf5"
+        self.config["save_name"] = "HTNet_data_nperseg250.hdf5"
         self.config["default_config_name"] = "HTNet_CONFIG"
         self.config["create_validation_bool"] = False
 
         self.fs = 250  # sampling rate
         self.line_freq = 60  # line freq = 60 Hz
+
+        #noverlap = noverlap  # np.floor(fs * 0.1)
+        #nperseg = nperseg  # np.floor(fs * 0.25)  # set window size and offset for PSD
+        self.nperseg = 250
+        self.noverlap = self.nperseg//2
         self.time_range = (500, -1)  # ignore first half of the measurement (before movement onset)
         self.freq_range = (0, 125)  # range of Power Spectrum, min and max freq in a tuple eg.(0,200) gives
         # power spectrum from 0 to 199 Hz. Default: PSD_freq_range=(0,200). NOTE_: max_freq not included!

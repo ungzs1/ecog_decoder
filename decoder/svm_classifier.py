@@ -288,6 +288,56 @@ class SvmDecoder:
         svmClassifier.results[self.id]['single'].append(res)
         print('\taccuracy: ', res)'''
 
+    def evaluate_single_features(self):
+        """
+        Evaluates single features. Saves results to self.results.
+        :return:
+        """
+
+        num_ch = self.px.shape[1]
+        num_ranges = self.px.shape[0]
+        freq_range = np.arange(num_ranges)  # to use all ranges, i.e to only select features
+
+        # these two variables store selected feature set and accuracy in each iteration
+        best_features_in_trial = {'result': [], 'channel': [], 'freq_range': []}
+        best_features_in_trial_test = {'result': [], 'channel': [], 'freq_range': []}
+
+        # loop through all frequency bands
+        for freq in [freq_range]:  # TODO!!! minden freq range egybe
+            # loop through all channels bands
+            for ch in range(num_ch):
+                # fit px (featurevector) to required model input shape
+                px_temp = np.transpose(self.px[freq, ch, :])
+                px_temp_test = np.transpose(self.px_test[freq, ch, :])
+
+                # build and evaluate model, returns accuracy result
+                res = self.score_model(px_temp, self.py)
+
+                # build model on (final) px_temp
+                model = self.clf.fit(px_temp, self.py)
+
+                # evaluate model on test set
+                res_test = model.score(px_temp_test, self.py_test)
+
+                best_features_in_trial['result'].append(res)
+                best_features_in_trial['channel'].append(ch)
+                best_features_in_trial['freq_range'].append(freq)
+
+                best_features_in_trial_test['result'].append(res_test)
+                best_features_in_trial_test['channel'].append(ch)
+                best_features_in_trial_test['freq_range'].append(freq)
+
+
+        # add result to global class variable
+        if self.id not in SvmDecoder.results:
+            SvmDecoder.results[self.id] = {}
+
+        SvmDecoder.results[self.id]['all_features'] = {'train': best_features_in_trial,
+                                                       'test': best_features_in_trial_test}
+
+        # print results
+        print('All features are evaluated. channels: {}, frequency bands: {}'.format(num_ch, num_ranges))
+
     def baseline(self):
         # fit px (featurevector) to required model input shape
         px_temp = np.transpose(self.px.reshape(-1, self.py.shape[0]))  # train
@@ -717,7 +767,11 @@ class SvmDecoder:
                 for model_type in self.model_types:
                     # SINGLE FEATURE strategy
                     # my_model.single_feature()# this list stores accuracy of each feature for the given classification task
-                    if model_type == 'baseline':
+                    if model_type == 'eval_all':
+                        # evaluate all features individually
+                        print('**evalutaing all features')
+                        self.evaluate_single_features()
+                    elif model_type == 'baseline':
                         # BASELINE strategy
                         print('**baseline')
                         self.baseline()
@@ -762,6 +816,7 @@ class SvmDecoder:
                 f.write('mean\n')
                 f.write(table2)
 
+        print('results and models saved at:\n{}'.format(self.sp))
         return results
 
     @classmethod
@@ -796,7 +851,8 @@ class SvmDecoder:
             train_row = ['train']
             test_row = ['test']
             for trial in result.keys():
-                if trial == 'greedy':
+                if trial == 'eval_all': continue  # todo erre is raigazitani
+                elif trial == 'greedy':
                     res_train = round(result[trial][0][-1], 2)
                     res_test = round(result[trial][1][-1], 2)
 

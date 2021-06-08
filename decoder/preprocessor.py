@@ -51,21 +51,19 @@ def car(data):
     return data
 
 
-def get_spectra(x, fs, freq_range):
+def get_spectra(x, fs, freq_range, nperseg, noverlap):
     """
     returns PSD as "all_psd" in form of [frequencies, channels, trials]. power spectrum densitiy for each channel
     for each trial
     """
 
-    noverlap = np.floor(fs * 0.1)
-    nperseg = np.floor(fs * 0.25)  # set window size and offset for PSD
     all_psd = []  # PSD for all trials and channels
 
     for curr_data in x:  # loop through all trials
         block_psd = []  # PSD for features in current 'block' ie all channels for this trial
         # get Power Spectrum Density with signal.welch
         for ch in range(x.shape[1]):  # loop through all channels
-            [f, temp_psd] = welch(curr_data[ch, :], nfft=fs, fs=fs, noverlap=noverlap, nperseg=nperseg)
+            [f, temp_psd] = welch(curr_data[ch, :], fs=fs, noverlap=noverlap, nperseg=nperseg)
             temp_psd = temp_psd[
                 np.where((freq_range[0] <= f) & (f <= freq_range[1]))]  # to get the desired freq range only
             block_psd.append(temp_psd)
@@ -225,8 +223,8 @@ class Preprocessor(object):
         t_end = self.time_range[1]
         x = x[:, :, t_start:t_end]
 
-        # Calculate power spectral density from 0 to 200 Hz
-        px = get_spectra(x, self.fs, self.freq_range)
+        # Calculate power spectral density
+        px = get_spectra(x, fs=self.fs, freq_range=self.freq_range, nperseg=self.nperseg, noverlap=self.noverlap)
         py = y  # nothing to change
 
         px = np.asarray(px)
