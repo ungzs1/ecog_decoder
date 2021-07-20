@@ -1,6 +1,6 @@
 data/*
 !data/raw_data/__init__.py
-!data/preprocessed_data/__init__.py
+!data/preprocessed_data/.keep
 *.pyc
 logs/*.*
 !logs/__init__.py
