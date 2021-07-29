@@ -3,6 +3,7 @@ import os
 import numpy as np
 import xmltodict
 import h5py
+import json
 
 from scipy.signal import butter, lfilter, iirnotch, filtfilt, welch
 
@@ -76,7 +77,7 @@ def get_spectra(x, fs, freq_range, nperseg, noverlap):
     return all_psd
 
 
-def config_post(path, key, value):
+''''def config_post(path, key, value):
     if key.endswith("value"):
         try:
             return key, int(value)
@@ -89,31 +90,17 @@ def config_post(path, key, value):
         except (ValueError, TypeError):
             return key, value
 
-    return key, value
+    return key, value'''
 
 
-class Preprocessor(object):
-    def __init__(self, config_file="", config=None,
-                 time_range=(0, -1), freq_range=(0, 200), fs=-1, line_freq=-1, subject_ids=None):
-        if config is None:
-            config = {}
+class Preprocessor:
+    def __init__(self, time_range=(0, -1), freq_range=(0, 200), fs=-1, line_freq=-1, subject_ids=None):
 
-        if config_file != "" and os.path.exists(config_file):
-            with open(config_file) as fd:
-                try:
-                    self.config = xmltodict.parse(fd.read(), dict_constructor=dict, postprocessor=config_post)
-                    self.config = self.config["root"]
-                    self.config.update(config)
-                except Exception:
-                    self.config = config
-        else:
-            self.config = config
-
-        self.config.setdefault("save_dir", "")
-        self.config.setdefault("save_name", "")
-        self.config.setdefault("default_config_name", "config.xml")
-        self.config.setdefault("create_validation_bool", True)
-        self.config.setdefault("data_source", "")
+        self.save_dir = ""
+        self.save_name = ""
+        self.default_config_name = "config.xml"
+        self.create_validation_bool = True
+        self.data_source = ""
 
         self.time_range = time_range  # set time range of trials to use in a tuple of (first data, last data),
         # eg (1000,-500) ignores first 1000 and last 500 data points. Default: PSD_time_range=(0,-1) to use whole range
@@ -160,13 +147,13 @@ class Preprocessor(object):
         '''if self.config["create_validation_bool"]:
             train_x, train_y, val_x, val_y = self.create_validation_from_train(train_x, train_y)'''
 
-        # Create datasets
+        # *** Create datasets ***
         print('saving datasets...')
+        if not os.path.exists(self.save_dir):
+            os.makedirs(self.save_dir)
 
-        if not os.path.exists(self.config["save_dir"]):
-            os.makedirs(self.config["save_dir"])
-
-        with h5py.File(os.path.join(self.config["save_dir"], self.config["save_name"]), 'w') as hf:
+        # save results
+        with h5py.File(os.path.join(self.save_dir, self.save_name), 'w') as hf:
             grp_train_x = hf.create_group("train_x")
             grp_train_y = hf.create_group("train_y")
             grp_test_x = hf.create_group("test_x")
@@ -185,10 +172,14 @@ class Preprocessor(object):
                 hf.create_dataset("val_x", data=val_x)
                 hf.create_dataset("val_y", data=val_y)'''
 
-        with open(os.path.join(self.config["save_dir"], self.config["default_config_name"]), "w") as fd:
-            self.config["time_range"] = str(self.time_range)
+        # save config info
+        with open(os.path.join(self.save_dir, self.default_config_name), "w") as fd:
+            # save config settings
+            config = self.__dict__
+            json.dump(config, fd)
+            '''self.config["time_range"] = str(self.time_range)
             root = {"root": self.config}
-            fd.write(xmltodict.unparse(root, pretty=True))
+            fd.write(xmltodict.unparse(root, pretty=True))'''
 
         print("Preprocessing done")
 

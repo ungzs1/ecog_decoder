@@ -12,11 +12,11 @@ class SvmHtnetData(SvmDecoder):
         # *** USER PARAMETERS ***
         # i/o settings
         root = os.path.abspath(os.path.dirname(__file__))
-        lp = os.path.join(root, '..', '..', 'data', 'preprocessed_data', 'HTNet_data', 'HTNet_data_nperseg750.hdf5')
+        lp = os.path.join(root, '..', '..', 'data', 'preprocessed_data', 'HTNet_data', 'HTNet_data.hdf5')
         self.preprocessed_data = h5py.File(lp, 'r')
         self.subject_ids = ['EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08', 'EC09', 'EC10',
                             'EC11', 'EC12']
-        self.sp = os.path.join(root, '..', '..', 'trained_models', 'svm', 'HTNet_data', 'nperseg750')
+        self.sp = os.path.join(root, '..', '..', 'trained_models', 'svm', 'HTNet_data', 'delll')
         self.save_model = False
         self.save_info = True  # if True, results not only displayed in the terminal but also saved.
 
@@ -45,7 +45,6 @@ class SvmHtnetData(SvmDecoder):
         self.model_types = ['eval_all', 'greedy', 'baseline']  #, 'Nbest', 'greedy', 'rGreedy', 'eval_all'
         self.greedy_max_features = 10
         self.reverse_greedy_min_features = -1
-
 
 if __name__ == '__main__':
     SvmHtnetData().run()

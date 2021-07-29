@@ -14,12 +14,12 @@ class HtnetPreprocessor(Preprocessor):
         path_to_data = os.path.join(my_path, '..', '..', 'data', 'raw_data', 'naturalistic_move_v_rest')
         self.lp = os.path.join(path_to_data, 'ecog_dataset')  # data load path
 
-        self.config["data_source"] = self.lp
-        self.config["save_dir"] = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'data',
-                                               'preprocessed_data', 'HTNet_data')
-        self.config["save_name"] = "HTNet_data_nperseg250.hdf5"
-        self.config["default_config_name"] = "HTNet_CONFIG"
-        self.config["create_validation_bool"] = False
+        self.data_source = self.lp
+        self.save_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..', '..', 'data',
+                                               'preprocessed_data', 'HTNet_data2')
+        self.save_name = "HTNet_data_nperseg250.hdf5"
+        self.default_config_name = "HTNet_CONFIG"
+        self.create_validation_bool = False
 
         self.fs = 250  # sampling rate
         self.line_freq = 60  # line freq = 60 Hz

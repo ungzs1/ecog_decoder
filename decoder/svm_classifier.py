@@ -13,6 +13,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 
 import pickle
+import json
 from tabulate import tabulate
 import matplotlib.pyplot as plt
 
@@ -216,6 +217,11 @@ class SvmDecoder:
         self.model_types = model_types
         self.greedy_max_features = greedy_max_features
         self.reverse_greedy_min_features = reverse_greedy_min_features
+
+        # save config settings
+        config = self.__dict__
+        del config['preprocessed_data']
+        self.config = config
 
     def standardize_feature_vectors(self, same_scaler=True):
         # reshape(flatten) training data
@@ -697,9 +703,6 @@ class SvmDecoder:
         test_x = self.preprocessed_data['test_x']
         test_y = self.preprocessed_data['test_y']
 
-        # set model settings as class variables
-        # self.set_class_vars(modelSettings)
-
         # calculate classification accuracy for each subject
         for i, name in enumerate(self.subject_ids):
             print('####  subject: ', name, '####  \n')
@@ -797,8 +800,9 @@ class SvmDecoder:
             if not os.path.exists(self.sp):
                 os.makedirs(self.sp)
 
-            # save model parameters
-            # self.save_params()  # todo megirni hogy mentse ki a beallitott parametereket
+            # save model settings as class variables
+            with open(os.path.join(self.sp, 'svm_settings.json'), 'w') as fp:
+                json.dump(self.config, fp)
 
             # save accuracies as .pkl
             with open(os.path.join(self.sp, 'accs_all.pkl'), 'wb') as f:
@@ -830,14 +834,14 @@ class SvmDecoder:
         cls.r_greedy_min_features = modelSettings['reverse_greedy_min_features']
         cls.cv = modelSettings['cv']
         cls.test_size = modelSettings['test_size']
-        '''
+
         # feature engineering parameters
-        cls.trial_pairs=modelSettings['trial_pairs']
-        cls.ranges=modelSettings['ranges']
-        cls.do_correlation_analysis=modelSettings['do_correlation_analysis']
-        cls.correlation_pairs=modelSettings['correlation_pairs']
-        cls.multiple_rest=modelSettings['multiple_rest']
-        cls.corr_threshold=modelSettings['corr_threshold']'''
+        # cls.trial_pairs=modelSettings['trial_pairs']
+        # cls.ranges = modelSettings['ranges']
+        # cls.do_correlation_analysis = modelSettings['do_correlation_analysis']
+        # cls.correlation_pairs = modelSettings['correlation_pairs']
+        # cls.multiple_rest = modelSettings['multiple_rest']
+        # cls.corr_threshold = modelSettings['corr_threshold']
 
     @staticmethod
     def print_results(results):
