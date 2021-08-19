@@ -94,7 +94,8 @@ def get_spectra(x, fs, freq_range, nperseg, noverlap):
 
 
 class Preprocessor:
-    def __init__(self, time_range=(0, -1), freq_range=(0, 200), fs=-1, line_freq=-1, subject_ids=None):
+    def __init__(self, time_range=(0, -1), freq_range=(0, 200), fs=-1, line_freq=-1, subject_ids=None,
+                 do_notch_filt=True, do_car=True):
 
         self.save_dir = ""
         self.save_name = ""
@@ -106,7 +107,9 @@ class Preprocessor:
         # eg (1000,-500) ignores first 1000 and last 500 data points. Default: PSD_time_range=(0,-1) to use whole range
         self.freq_range = freq_range  # range of Power Spectrum, min and max freq in a tuple eg.(0,200)
         self.fs = fs  # sampling rate
+        self.do_notch_filt = do_notch_filt  # weather to do notch filtering at line frequency
         self.line_freq = line_freq  # line freq = 60 Hz
+        self.do_car = do_car  # weather to do car filtering
 
         self.subject_ids = subject_ids  # store subject ids to ease their access
 
@@ -204,10 +207,12 @@ class Preprocessor:
 
         # Notch filtering to remove line frequency noise and its multiplicands, in the desired frequency range (note
         # that frequencies outside of this range will be excluded from the data anyways
-        x = notch_filtering(x, self.fs, self.line_freq, self.freq_range)
+        if self.do_notch_filt:
+            x = notch_filtering(x, self.fs, self.line_freq, self.freq_range)
 
         # Common Average Reference (car) filter to remove noise common to all channels
-        x = car(x)
+        if self.do_car:
+            x = car(x)
 
         # extract desired time range
         t_start = self.time_range[0]

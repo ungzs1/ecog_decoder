@@ -175,7 +175,8 @@ class SvmDecoder:
                  trial_pairs=None, ranges=None, same_scaler=False, do_correlation_analysis=False,
                  correlation_pairs=None, multiple_rest=False, corr_threshold=None,
                  scaler=None, clf=None, evaluation=None, cv=None, test_size=None, model_types=None,
-                 greedy_max_features=None, reverse_greedy_min_features=None, *args, **kwargs):  # todo default erteketk beallitasa ahol kell
+                 greedy_max_features=None, reverse_greedy_min_features=None, channels_to_keep=None, *args,
+                 **kwargs):  # todo default erteketk beallitasa ahol kell
 
         # parameters defined by the script
         self.px = None
@@ -197,6 +198,7 @@ class SvmDecoder:
         self.save_info = save_info  # if True, results not only displayed in the terminal but also saved.
 
         # feature engineering settings
+        self.channels_to_keep = channels_to_keep
         self.trial_pairs = trial_pairs  # set groups to classify between hand v. rest, tongue v. rest, hand v. tongue)
         self.ranges = ranges
         # , range(150,170)] # set freq ranges: low Alpha, high alpha, beta, low gamma, high gamma, kszi
@@ -221,6 +223,11 @@ class SvmDecoder:
         # save config settings
         config = self.__dict__
         del config['preprocessed_data']
+        del config['px']
+        del config['py']
+        del config['px_test']
+        del config['py_test']
+        # del config['config']
         self.config = config
 
     def standardize_feature_vectors(self, same_scaler=True):
@@ -332,7 +339,6 @@ class SvmDecoder:
                 best_features_in_trial_test['result'].append(res_test)
                 best_features_in_trial_test['channel'].append(ch)
                 best_features_in_trial_test['freq_range'].append(freq)
-
 
         # add result to global class variable
         if self.id not in SvmDecoder.results:
@@ -455,8 +461,8 @@ class SvmDecoder:
         if self.id not in SvmDecoder.results:
             SvmDecoder.results[self.id] = {}
         SvmDecoder.results[self.id]['Nbest'] = [{key: feature[key] for key in ['rank', 'accuracy', 'n_best_acc',
-                                                                                  'n_best_acc_test', 'channel',
-                                                                                  'freq_range']} for feature in
+                                                                               'n_best_acc_test', 'channel',
+                                                                               'freq_range']} for feature in
                                                 sorted(feature_dict, key=lambda j: j['rank'])]
 
         # save the model and selected parameters to disk
@@ -519,7 +525,7 @@ class SvmDecoder:
     def greedy(self):
         num_ch = self.px.shape[1]
         num_ranges = self.px.shape[0]
-        freq_range = np.arange(num_ranges)  # to use all ranges, i.e to only select features
+        # freq_range = np.arange(num_ranges)  # to use all ranges, i.e to only select features
 
         # these two variables store selected feature set and accuracy in each iteration
         best_features_in_trial = {'freq_range': [], 'channel': [], 'result': [], 'px': []}
@@ -533,23 +539,25 @@ class SvmDecoder:
             # find next best feature
             res = 0
             for ch in range(num_ch):
-                # fit px (featurevector) to required model input shape
-                px_temp = np.transpose(self.px[freq_range, ch, :])
-                px_temp_test = np.transpose(self.px_test[freq_range, ch, :])
+                progress_bar('features evaluated for feature ' + str(curr_features + 1), ch, num_ch)
+                for freq_range in range(num_ranges):
+                    # fit px (featurevector) to required model input shape
+                    px_temp = np.transpose(self.px[freq_range, ch, :]).reshape(-1, 1)
+                    px_temp_test = np.transpose(self.px_test[freq_range, ch, :]).reshape(-1, 1)
 
-                # concatenate current (n-th) features with best n-1 to get feature vector
-                if len(best_features_in_trial['px']) != 0:
-                    px_temp = np.concatenate((best_features_in_trial['px'][-1], px_temp), axis=1)
-                    px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
+                    # concatenate current (n-th) features with best n-1 to get feature vector
+                    if len(best_features_in_trial['px']) != 0:
+                        px_temp = np.concatenate((best_features_in_trial['px'][-1], px_temp), axis=1)
+                        px_temp_test = np.concatenate((best_features_in_trial_test['px'][-1], px_temp_test), axis=1)
 
-                # build and evaluate model, returns accuracy result
-                res_temp = self.score_model(px_temp, self.py)
+                    # build and evaluate model, returns accuracy result
+                    res_temp = self.score_model(px_temp, self.py)
 
-                # compare current px_temp accuracy with best px_temp accuracy, if better, store it
-                if res_temp > res:
-                    res = res_temp
-                    best_feature = {'freq_range': freq_range, 'channel': ch, 'result': res, 'px': px_temp}
-                    best_feature_test = px_temp_test
+                    # compare current px_temp accuracy with best px_temp accuracy, if better, store it
+                    if res_temp > res:
+                        res = res_temp
+                        best_feature = {'freq_range': freq_range, 'channel': ch, 'result': res, 'px': px_temp}
+                        best_feature_test = px_temp_test
 
             # add next best feature to preciously selected set of features (if conditions stand)
             # and evaluate on test set
@@ -590,7 +598,7 @@ class SvmDecoder:
                                                  best_features_in_trial_test['result'],
                                                  best_features_in_trial['channel'],
                                                  best_features_in_trial[
-                                                        'freq_range']]  # TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
+                                                     'freq_range']]  # TODO ezt dictionary alakba kell irni, de ehhez a kiiratast is modositani kell, meg mindenhol ahol ebbol olvas
 
         # save the model and selected parameters to disk
         if self.save_model:
@@ -706,15 +714,20 @@ class SvmDecoder:
         # calculate classification accuracy for each subject
         for i, name in enumerate(self.subject_ids):
             print('####  subject: ', name, '####  \n')
-            # get train/test data
-            # train
+            # get train data
             px_base = np.asarray(train_x[name])
             px_base = np.transpose(px_base, axes=[2, 1, 0])  # reorder to (freq, channels, trials)
             py_base = np.asarray(train_y[name])
-            # test
+
+            # get test data
             px_base_test = np.asarray(test_x[name])
             px_base_test = np.transpose(px_base_test, axes=[2, 1, 0])  # reorder to ???(freq, channels, trials)
             py_base_test = np.asarray(test_y[name])
+
+            # exclude specific channels (if specified)
+            if self.channels_to_keep is not None:
+                px_base = px_base[:, self.channels_to_keep, :]
+                px_base_test = px_base_test[:, self.channels_to_keep, :]
 
             # reshape feature vectors
             trial_pairs = self.trial_pairs
@@ -772,23 +785,23 @@ class SvmDecoder:
                     # my_model.single_feature()# this list stores accuracy of each feature for the given classification task
                     if model_type == 'eval_all':
                         # evaluate all features individually
-                        print('**evalutaing all features')
+                        print('\n** evalutaing all features')
                         self.evaluate_single_features()
                     elif model_type == 'baseline':
                         # BASELINE strategy
-                        print('**baseline')
+                        print('\n** baseline')
                         self.baseline()
                     elif model_type == 'Nbest':
                         # N-BEST strategy
-                        print('**N best')
+                        print('\n** N best')
                         self.n_best(plot=True)
                     elif model_type == 'greedy':
                         # GREEDY strategy
-                        print('**greedy')
+                        print('\n** greedy')
                         self.greedy()
                     elif model_type == 'rGreedy':
                         # reverse GREEDY strategy
-                        print('**greedy REVERSO')
+                        print('\n** greedy REVERSO')
                         self.r_greedy()
 
         # print results as table
@@ -802,7 +815,7 @@ class SvmDecoder:
 
             # save model settings as class variables
             with open(os.path.join(self.sp, 'svm_settings.json'), 'w') as fp:
-                json.dump(self.config, fp)
+                json.dump(str(self.config), fp)  # todo nem szep a kiiratas (stringbe alakitva egy dict)
 
             # save accuracies as .pkl
             with open(os.path.join(self.sp, 'accs_all.pkl'), 'wb') as f:
@@ -855,7 +868,8 @@ class SvmDecoder:
             train_row = ['train']
             test_row = ['test']
             for trial in result.keys():
-                if trial == 'eval_all': continue  # todo erre is raigazitani
+                if trial == 'eval_all':
+                    continue  # todo erre is raigazitani
                 elif trial == 'greedy':
                     res_train = round(result[trial][0][-1], 2)
                     res_test = round(result[trial][1][-1], 2)
@@ -867,6 +881,8 @@ class SvmDecoder:
 
                     headers.append(trial)
                 elif trial == 'Nbest':
+                    continue  # TODO megirni ezt
+                elif trial == 'all_features':
                     continue  # TODO megirni ezt
                 else:
                     res_train = round(result[trial][0], 2)
