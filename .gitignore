@@ -1,5 +1,6 @@
 data/*
 !data/raw_data/__init__.py
+!data/raw_data/naturalistic_move_v_rest/electrode_locations
 !data/preprocessed_data/.keep
 *.pyc
 logs/*.*
