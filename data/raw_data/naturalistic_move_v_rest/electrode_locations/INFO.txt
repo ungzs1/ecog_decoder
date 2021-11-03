@@ -1,0 +1,20 @@
+SubjectID	PatientID
+S01	a0f66459
+S02	c95c1e82
+S03	cb46fd46
+S04	fcb01f7a
+S05	ffb52f92
+S06	b4ac1726
+S07	f3b79359
+S08	ec761078
+S09	f0bbc9a9
+S10	abdb496b
+S11	ec168864
+S12	b45e3f7b
+
+
+
+Download/description:
+
+https://github.com/BruntonUWBio/mining2021
+https://figshare.com/articles/Minimal_zip/12509831
