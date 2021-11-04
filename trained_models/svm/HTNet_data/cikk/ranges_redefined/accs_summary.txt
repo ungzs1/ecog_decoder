@@ -1,0 +1,77 @@
+EC01
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.8       0.9         0.85
+test       0.78      0.79        0.72
+
+EC02
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.7       0.82        0.73
+test       0.83      0.83        0.81
+
+EC03
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.89      0.93        0.91
+test       0.75      0.78        0.83
+
+EC04
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.81      0.86        0.81
+test       0.91      0.86        0.92
+
+EC05
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.79      0.93        0.89
+test       0.73      0.56        0.56
+
+EC06
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.92      0.95        0.91
+test       0.81      0.79        0.77
+
+EC07
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.94      0.97        0.96
+test       0.92      0.95        0.96
+
+EC08
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.86      0.94        0.9
+test       0.67      0.76        0.82
+
+EC09
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.9       0.92        0.83
+test       0.88      0.88        0.95
+
+EC10
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.8       0.92        0.9
+test       0.87      0.88        0.88
+
+EC11
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.8       0.89        0.86
+test       0.88      0.88        0.92
+
+EC12
+         single    greedy    baseline
+-----  --------  --------  ----------
+train      0.72      0.84        0.81
+test       0.68      0.85        0.86
+
+mean
+       single      greedy      baseline
+-----  ----------  ----------  ----------
+train  0.83+-0.07  0.91+-0.04  0.86+-0.06
+test   0.81+-0.08  0.82+-0.09  0.83+-0.11
