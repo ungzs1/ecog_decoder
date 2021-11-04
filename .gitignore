@@ -7,8 +7,6 @@ trained_models/*
 trained_models/svm/*
 !trained_models/svm/HTNet_data
 
-/analysis/move_vs_rest/figs/
-
 /data/*
 !/data/__init__.py
 
